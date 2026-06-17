@@ -1,0 +1,28 @@
+name: mythos-medium
+depth: 24
+n_head: 16
+n_embd: 1536
+block_size: 2048
+vocab_size: 50304
+batch_size: 16
+grad_accum: 8
+learning_rate: 2.0e-4
+weight_decay: 0.1
+warmup_steps: 500
+max_steps: 50000
+train_budget_seconds: 3600
+optimizer: aurora
+use_rope: true
+use_qk_norm: true
+activation: relu2
+untied_embeddings: true
+val_bpb_gate: 1.01
+data:
+  pretrain_tokens_b: 10
+  mix:
+    fineweb_edu: 0.70
+    stack_v2: 0.20
+    synthetic_code: 0.10
+eval:
+  proxy_every: 25
+  full_every: 250

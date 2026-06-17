@@ -1,0 +1,29 @@
+weights:
+  swe_bench_verified: 0.25
+  humaneval: 0.20
+  exploitbench: 0.15
+  gsm8k: 0.15
+  mmlu: 0.10
+  frontiercode: 0.10
+  val_bpb: 0.05
+
+proxy_tasks:
+  lm_eval:
+    - gsm8k
+    - hellaswag
+  swe_limit: 10
+  cyber_limit: 5
+  frontiercode_limit: 10
+
+full_tasks:
+  lm_eval:
+    - mmlu
+    - gsm8k
+    - humaneval
+    - arc_challenge
+  swe_limit: 500
+  cyber_limit: 41
+
+regression:
+  max_drop_absolute: 0.02
+  golden_path: tests/regression/golden_scores.json

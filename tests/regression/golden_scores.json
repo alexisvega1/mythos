@@ -1,0 +1,1 @@
+{"mythos_score":0.18,"raw":{"swe_bench_verified_pass_at_1":0.6,"humaneval_pass_at_1":0.06,"exploitbench_weighted_flags":0.28,"gsm8k_acc":0.1,"mmlu_macro":0.08,"frontiercode_proxy":0.025,"val_bpb":1.2},"components":{"swe_bench_verified":0.75,"humaneval":0.067,"exploitbench":0.28,"gsm8k":0.105,"mmlu":0.089,"frontiercode":0.083,"val_bpb":0.2}}

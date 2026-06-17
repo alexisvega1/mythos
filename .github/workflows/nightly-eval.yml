@@ -1,0 +1,26 @@
+name: Nightly Proxy Eval
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  proxy-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Proxy MYTHOS_SCORE
+        run: |
+          mythos-eval --mode proxy --limit 10 --output eval/results/nightly.json
+      - name: Regression gate
+        run: pytest tests/regression/test_score_repro.py -q
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nightly-eval
+          path: eval/results/nightly.json

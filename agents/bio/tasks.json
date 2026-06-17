@@ -1,0 +1,7 @@
+[
+  {"question_id": "bio-001", "expected_correct": true},
+  {"question_id": "bio-002", "expected_correct": false},
+  {"question_id": "bio-003", "expected_correct": true},
+  {"question_id": "bio-004", "expected_correct": false},
+  {"question_id": "bio-005", "expected_correct": true}
+]

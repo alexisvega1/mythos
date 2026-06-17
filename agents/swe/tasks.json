@@ -1,0 +1,12 @@
+[
+  {"instance_id": "django__django-11001", "expected_pass": true},
+  {"instance_id": "sympy__sympy-11400", "expected_pass": false},
+  {"instance_id": "astropy__astropy-6938", "expected_pass": true},
+  {"instance_id": "scikit-learn__scikit-learn-13496", "expected_pass": false},
+  {"instance_id": "pytest-dev__pytest-5221", "expected_pass": true},
+  {"instance_id": "matplotlib__matplotlib-23299", "expected_pass": false},
+  {"instance_id": "requests__requests-3362", "expected_pass": true},
+  {"instance_id": "flask__flask-4045", "expected_pass": false},
+  {"instance_id": "pallets__click-878", "expected_pass": true},
+  {"instance_id": "psf__requests-863", "expected_pass": false}
+]

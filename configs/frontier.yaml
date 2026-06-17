@@ -1,0 +1,40 @@
+name: mythos-frontier
+depth: 48
+n_head: 32
+n_embd: 4096
+block_size: 8192
+vocab_size: 100352
+batch_size: 4
+grad_accum: 32
+learning_rate: 1.5e-4
+weight_decay: 0.1
+warmup_steps: 2000
+max_steps: 200000
+train_budget_seconds: 86400
+optimizer: aurora
+use_rope: true
+use_qk_norm: true
+activation: relu2
+untied_embeddings: true
+use_sliding_window: true
+sliding_window: 4096
+val_bpb_gate: 1.005
+data:
+  pretrain_tokens_b: 100
+  mix:
+    fineweb_edu: 0.55
+    stack_v2: 0.25
+    cyber_defensive: 0.05
+    bio_scientific: 0.10
+    synthetic_code: 0.05
+posttrain:
+  swe_rft: true
+  swe_grpo: true
+  cyber_ladder_rl: true
+eval:
+  proxy_every: 10
+  full_every: 100
+serve:
+  context_length: 1048576
+  max_output: 131072
+  fallback_model: mythos-medium

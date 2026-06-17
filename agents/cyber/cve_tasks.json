@@ -1,0 +1,22 @@
+[
+  {
+    "cve_id": "v8-cve-2024-001",
+    "flags": {"coverage": true, "crash": true, "addrof": false, "ace": false}
+  },
+  {
+    "cve_id": "v8-cve-2024-002",
+    "flags": {"coverage": true, "crash": true, "addrof": true, "fakeobj": true, "arb_read": false, "ace": false}
+  },
+  {
+    "cve_id": "v8-cve-2024-003",
+    "flags": {"coverage": true, "crash": true, "pc_control": true, "ace": false}
+  },
+  {
+    "cve_id": "v8-cve-2024-004",
+    "flags": {"coverage": true, "crash": false}
+  },
+  {
+    "cve_id": "v8-cve-2024-005",
+    "flags": {"coverage": true, "crash": true, "addrof": true, "arb_read": true, "arb_write": true, "ace": true}
+  }
+]
