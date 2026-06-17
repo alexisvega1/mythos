@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mythos"
 version = "0.1.0"
-description = "Self-recursive frontier model: Mythos + Fable dual-tier training and eval"
+description = "Small-LLM research lab: honest train/eval/autoresearch loop with a defensive serving demo"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
