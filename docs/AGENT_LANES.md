@@ -1,0 +1,145 @@
+# Multi-Agent Implementation Plan — Claude Code · Cursor · Codex
+
+Three coding agents work this repo in parallel. **Each agent uses its own git
+worktree** so commits never collide mid-push. File lanes are still enforced on top
+of that isolation.
+
+## Worktree isolation (mandatory)
+
+| Agent | Checkout | Branch prefix | Lane |
+|-------|----------|---------------|------|
+| **Claude Code** | `/Users/alexisvega/mythos` (primary) or `mythos-claude` | `cc/*` | A — core train/eval |
+| **Cursor** | `/Users/alexisvega/mythos-cursor` | `cur/*` | B — serve, router, CI, docs |
+| **Codex** | `/Users/alexisvega/mythos-codex` | `cdx/*` | C — posttrain, agent evals |
+
+Bootstrap (from any checkout):
+
+```bash
+bash scripts/setup-worktrees.sh all   # or: cursor | claude | codex
+git worktree list
+```
+
+**Rules**
+
+1. Never edit files in another agent's checkout — only push branches and merge via PR.
+2. One agent = one lane = one branch prefix. Flag any cross-lane touch in the PR body.
+3. Branch from latest `origin/main`; PR into `main`; keep `pytest` green.
+4. If two PRs touch the same file, **Lane A wins on contracts** (`checkpoint` schema,
+   `RawScores` keys); others rebase and consume.
+
+### Collision note (2026-06-17)
+
+PR #2 (`feat/real-training`) landed P0 core work from **Cursor's checkout** while
+Claude Code owned Lane A — same worktree, crossed lanes. **Merge #2 is fine** (the
+code is honest); afterward **Cursor stays in `mythos-cursor` and Lane B only**.
+
+---
+
+## Golden rules (every agent)
+
+1. **Honesty invariant:** no metric independent of the trained checkpoint; missing
+   capability → `None`/`unavailable`, never a constant. **Defensive/eval-only** (no
+   offensive cyber/bio). See `SECURITY.md`.
+2. **Contracts are owned by Lane A (Claude).** Other lanes consume them; don't redefine.
+3. **Shared files** (`config.py`, `pyproject.toml`) → additive changes only, called out
+   in the PR. `PLAN.md`/`SECURITY.md`/`program.md` are Claude-owned; propose via PR.
+
+## Lane assignments
+
+### Lane A — Claude Code · *core: make it learn + honest eval* · `cc/*`
+**Checkout:** `/Users/alexisvega/mythos` (or `mythos-claude` worktree)
+
+**Owns:** `src/mythos/data/**`, `src/mythos/train.py`, `src/mythos/model/gpt.py`,
+`src/mythos/checkpoint.py`, `src/mythos/eval/harness.py`, `src/mythos/eval/composite.py`,
+`tests/regression/test_no_fake_wins.py`, `data/corpus/**`, `data/fixtures/**`
+
+**Tasks (P0/P1):** real tokenized data loader + held-out split; byte-accurate `val_bpb`;
+checkpoint-conditioned eval; no-fake-wins gate; real tiny training run + `samples.txt`.
+
+**Status:** PR #2 open (P0 implemented; merge then continue P1 here).
+
+### Lane B — Cursor · *product surface: serve, deploy-safety, UX, CI* · `cur/*`
+**Checkout:** `/Users/alexisvega/mythos-cursor` **only**
+
+**Owns:** `src/mythos/serve/**`, `src/mythos/router/**`, `src/mythos/cli.py`,
+`src/mythos/lab.py`, `eval/dashboards/**`, `scripts/**`, `.github/workflows/**`,
+README/docs polish (not `PLAN.md` / `SECURITY.md` / `program.md`)
+
+**Tasks:** load real checkpoint in `serve`; OpenAI-compatible streaming API; dual-tier
+router as defensive safety-classifier demo; dashboard from `results.tsv`; CI matrix
+(unit + integration + no-fake-wins gate); polished quickstart.
+
+**Status:** worktree created; start after PR #2 merges (consume checkpoint contract).
+
+### Lane C — Codex · *isolated capability modules* · `cdx/*`
+**Checkout:** `/Users/alexisvega/mythos-codex`
+
+**Owns:** `src/mythos/posttrain.py`, `agents/swe/**`, `agents/secsec/**`;
+removes legacy `agents/cyber/**` and `agents/bio/**`.
+
+**Tasks:** SFT from pretrained checkpoint; mini-swe-agent on SWE-bench Lite; defensive
+secsec comprehension eval; fold bio into MMLU science via lm-eval.
+
+## Shared contracts (Lane A owns, B & C consume)
+
+**Checkpoint schema** — `torch.save` to `checkpoints/<name>/latest.pt`:
+
+```python
+{
+  "model": state_dict,
+  "config": config.__dict__,
+  "tokenizer": {"kind": "char|gpt2", "vocab": {...}},
+  "step": int,
+  "val_loss": float,
+  "val_bpb": float,
+}
+```
+
+Plus `checkpoints/<name>/meta.json` and `samples.txt`.
+
+**Eval RawScores** — keys: `val_bpb`, `humaneval_pass_at_1`, `gsm8k_acc`,
+`mmlu_macro`, `secsec_comprehension`, `swe_bench_lite_pass_at_1`. Unmeasurable →
+`None`; composite renormalizes. Never emit 0 or limit-derived constants.
+
+## Sequencing
+
+```
+Lane A P0 (checkpoint + RawScores)  ──unblocks──▶  Lane B (serve real ckpt)
+                                    └──unblocks──▶  Lane C (posttrain + eval)
+```
+
+## Status board
+
+- [x] PR #1 — honest reset (merged)
+- [ ] **A** — PR #2 P0 honest lab (merge, then P1 pretrain) *(Claude · `mythos`)*
+- [ ] **B** — serve + router + CI *(Cursor · `mythos-cursor` · `cur/*`)*
+- [ ] **C** — posttrain + swe/secsec eval *(Codex · `mythos-codex` · `cdx/*`)*
+
+---
+
+## Copy-paste kickoff — Cursor (Lane B)
+
+```text
+You are Lane B on /Users/alexisvega/mythos-cursor ONLY. Read docs/AGENT_LANES.md,
+PLAN.md, SECURITY.md. Branch cur/<topic> from latest main. Edit ONLY Lane B files
+(serve/, router/, cli.py, lab.py, scripts/, .github/, docs polish). Do NOT touch
+data/, train.py, eval harness/composite, or agents/. Consume checkpoint + RawScores
+contracts; never redefine. Keep pytest green. Never fake a metric.
+```
+
+## Copy-paste kickoff — Claude Code (Lane A)
+
+```text
+You are Lane A on /Users/alexisvega/mythos (primary checkout). Branch cc/<topic>.
+Own data/, train, model, checkpoint, eval harness/composite, no-fake-wins tests,
+corpus/fixtures. Merge PR #2 if ready, then P1 real pretrain. Do not edit serve/,
+router/, or posttrain/. Publish contract changes in AGENT_LANES before B/C integrate.
+```
+
+## Copy-paste kickoff — Codex (Lane C)
+
+```text
+You are Lane C on /Users/alexisvega/mythos-codex. Branch cdx/<topic>. Own posttrain.py,
+agents/swe/, agents/secsec/. Consume checkpoint contract from AGENT_LANES. Real evals
+only; report None when unavailable. Defensive-only. Never fake a metric.
+```

@@ -1,0 +1,25 @@
+---
+description: Cursor owns Lane B only — isolated worktree, no Claude Code file overlap
+alwaysApply: true
+---
+
+# Lane B — Cursor (mythos-cursor worktree)
+
+**Checkout:** `/Users/alexisvega/mythos-cursor` only. **Branches:** `cur/*`.
+
+Do **not** edit Lane A (Claude Code · `/Users/alexisvega/mythos`):
+
+- `src/mythos/data/**`, `train.py`, `model/gpt.py`, `checkpoint.py`
+- `src/mythos/eval/harness.py`, `eval/composite.py` (core scoring)
+- `tests/regression/test_no_fake_wins.py`, `data/corpus/**`, `data/fixtures/**`
+
+Do **not** edit Lane C (Codex):
+
+- `posttrain.py`, `agents/swe/**`, `agents/secsec/**`
+
+**Own:** `serve/**`, `router/**`, `cli.py`, `lab.py`, `scripts/**`,
+`.github/workflows/**`, README/docs polish (not `PLAN.md` / `SECURITY.md` / `program.md`).
+
+Read `docs/AGENT_LANES.md` for checkpoint + RawScores contracts — consume, never redefine.
+
+If Claude has an open PR on `cc/*` or `feat/*`, do not commit in `/Users/alexisvega/mythos`.
