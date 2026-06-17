@@ -16,6 +16,7 @@ Three coding agents work this repo in parallel. Use **separate git worktrees**
 1. **One agent = one lane = one branch prefix.** Never edit files outside your lane
    without flagging it in the PR description.
 2. Branch from latest `main`; PR into `main`; **keep `pytest` green**; Conventional Commits.
+   **`main` must stay protected** — no direct pushes; see [`BRANCH_PROTECTION.md`](BRANCH_PROTECTION.md).
 3. **Honesty invariant:** no metric independent of the trained checkpoint; missing
    capability → `None`/`unavailable`, never a constant. **Defensive/eval-only** (no
    offensive cyber/bio). See `SECURITY.md`.
