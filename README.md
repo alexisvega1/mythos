@@ -4,10 +4,11 @@ A **small-LLM research lab**: train → eval → mutate → keep/discard, starti
 scale and scaling only what an honest scoreboard proves. Architecturally inspired by
 frontier-lab patterns; **not** a frontier model and makes no such claim.
 
-> ### STATUS: P0 honest lab (real data + checkpoint eval)
+> ### STATUS: P0 honest lab + Lane B serve (real checkpoint API)
 > Training uses **real/fixture text** with held-out **val_bpb**; eval loads checkpoints and
-> refuses fake constants (`test_no_fake_wins`). Capability proxies (GSM8K, SWE, etc.) still
-> return `None` until wired — see [`CURSOR_HANDOFF.md`](CURSOR_HANDOFF.md) for P1–P4.
+> refuses fake constants. **Serving** loads a real checkpoint via `MythosEngine` — no checkpoint
+> → explicit `available: false` (never a stub reply). Fable router demo blocks flagged queries.
+> Capability proxies (GSM8K, SWE) still `None` until wired — see [`CURSOR_HANDOFF.md`](CURSOR_HANDOFF.md).
 
 ## Architecture
 
@@ -29,8 +30,14 @@ mythos-eval --mode proxy --limit 5
 # AutoMythos loop (5-min budget per experiment)
 mythos-autoresearch --budget-minutes 5
 
-# Serve Mythos/Fable dual-tier API
-mythos-serve --checkpoint checkpoints/latest
+# Serve Mythos/Fable dual-tier API (real checkpoint required for generation)
+mythos-train --config configs/test.yaml --steps 100   # produces checkpoints/mythos-test/latest.pt
+export MYTHOS_CHECKPOINT=checkpoints/mythos-test/latest.pt
+mythos-serve --checkpoint "$MYTHOS_CHECKPOINT"
+
+# Without a checkpoint: clean queries return available=false (no fabricated text).
+# Flagged queries (exploit/shellcode/etc.) route to Fable tier regardless.
+curl -s localhost:8000/health | jq .
 ```
 
 ## Honest targets (small scale)
