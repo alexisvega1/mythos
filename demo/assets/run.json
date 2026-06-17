@@ -1,0 +1,131 @@
+{
+  "model": {
+    "params": 21070144,
+    "depth": 4,
+    "n_embd": 192,
+    "block_size": 96,
+    "vocab_size": 50257,
+    "device": "mps"
+  },
+  "pretrain": {
+    "steps": 500,
+    "seconds": 51.1,
+    "curve": [
+      {
+        "step": 20,
+        "bpb": 3.8529
+      },
+      {
+        "step": 40,
+        "bpb": 3.4119
+      },
+      {
+        "step": 60,
+        "bpb": 2.6918
+      },
+      {
+        "step": 80,
+        "bpb": 2.3891
+      },
+      {
+        "step": 100,
+        "bpb": 2.3063
+      },
+      {
+        "step": 120,
+        "bpb": 2.236
+      },
+      {
+        "step": 140,
+        "bpb": 2.1414
+      },
+      {
+        "step": 160,
+        "bpb": 2.0583
+      },
+      {
+        "step": 180,
+        "bpb": 1.9881
+      },
+      {
+        "step": 200,
+        "bpb": 1.9311
+      },
+      {
+        "step": 220,
+        "bpb": 1.8783
+      },
+      {
+        "step": 240,
+        "bpb": 1.8175
+      },
+      {
+        "step": 260,
+        "bpb": 1.785
+      },
+      {
+        "step": 280,
+        "bpb": 1.7412
+      },
+      {
+        "step": 300,
+        "bpb": 1.7363
+      },
+      {
+        "step": 320,
+        "bpb": 1.7091
+      },
+      {
+        "step": 340,
+        "bpb": 1.6902
+      },
+      {
+        "step": 360,
+        "bpb": 1.6679
+      },
+      {
+        "step": 380,
+        "bpb": 1.6461
+      },
+      {
+        "step": 400,
+        "bpb": 1.6363
+      },
+      {
+        "step": 420,
+        "bpb": 1.6481
+      },
+      {
+        "step": 440,
+        "bpb": 1.6357
+      },
+      {
+        "step": 460,
+        "bpb": 1.629
+      },
+      {
+        "step": 480,
+        "bpb": 1.6246
+      },
+      {
+        "step": 500,
+        "bpb": 1.6163
+      }
+    ],
+    "val_bpb": 1.6022,
+    "unigram_baseline_bpb": 1.9303,
+    "beats_baseline": true
+  },
+  "sft": {
+    "loss_start": 7.911,
+    "loss_end": 0.027,
+    "examples": 40,
+    "steps": 160
+  },
+  "samples": {
+    "base_shakespeare": "The doth please the rest, a remember\nI'll love thy gracious hand of hisIR of my lord?\nBut.\nShe do he had a VI:\nIUS:\nNo, my Lord of me, if",
+    "base_instruction": ".\nAnd, the king and the king you be\nDUKE VINCENTIO:\nand his wife",
+    "sft_instruction": "The capital of France is Paris.\nThe capital of France is Paris.\nThe capital of France is Paris."
+  },
+  "checkpoint": "/Users/alexisvega/mythos/demo/assets/ckpt-sft/latest.pt"
+}
