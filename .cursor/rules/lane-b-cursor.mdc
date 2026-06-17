@@ -1,25 +1,38 @@
 ---
-description: Cursor owns Lane B only — isolated worktree, no Claude Code file overlap
+description: Cursor lane — CI, tooling, dashboards; never serve/router (Claude Code)
 alwaysApply: true
 ---
 
-# Lane B — Cursor (mythos-cursor worktree)
+# Cursor lane (mythos-cursor worktree)
 
 **Checkout:** `/Users/alexisvega/mythos-cursor` only. **Branches:** `cur/*`.
 
-Do **not** edit Lane A (Claude Code · `/Users/alexisvega/mythos`):
+## Do NOT touch — Claude Code owns these
+
+**Lane A** (`/Users/alexisvega/mythos` or `mythos-laneB` · `cc/*`):
 
 - `src/mythos/data/**`, `train.py`, `model/gpt.py`, `checkpoint.py`
-- `src/mythos/eval/harness.py`, `eval/composite.py` (core scoring)
+- `src/mythos/eval/harness.py`, `eval/composite.py`
 - `tests/regression/test_no_fake_wins.py`, `data/corpus/**`, `data/fixtures/**`
 
-Do **not** edit Lane C (Codex):
+**Lane B serve/router** (`/Users/alexisvega/mythos-laneB` · `cc/serve-real` and follow-ons):
 
-- `posttrain.py`, `agents/swe/**`, `agents/secsec/**`
+- `src/mythos/serve/**` (inference, api, engine loading)
+- `src/mythos/router/**` (dual-tier safety router)
 
-**Own:** `serve/**`, `router/**`, `cli.py`, `lab.py`, `scripts/**`,
-`.github/workflows/**`, README/docs polish (not `PLAN.md` / `SECURITY.md` / `program.md`).
+Claude Code is actively implementing real checkpoint-backed serving. **Do not edit,
+rebase over, or PR changes to these paths.**
 
-Read `docs/AGENT_LANES.md` for checkpoint + RawScores contracts — consume, never redefine.
+**Lane C** (Codex · `cdx/*`): `posttrain.py`, `agents/swe/**`, `agents/secsec/**`
 
-If Claude has an open PR on `cc/*` or `feat/*`, do not commit in `/Users/alexisvega/mythos`.
+## Cursor owns
+
+- `.github/workflows/**` — CI matrix, no-fake-wins gate, smoke jobs
+- `scripts/**` — worktree bootstrap, cloud bootstrap (when added)
+- `eval/dashboards/**` — results.tsv dashboard
+- `src/mythos/lab.py`, `src/mythos/cli.py` — only if not conflicting with CC
+- README / docs polish (not `PLAN.md`, `SECURITY.md`, `program.md`)
+
+Consume checkpoint + RawScores contracts from `docs/AGENT_LANES.md`; never redefine.
+
+Never commit in `/Users/alexisvega/mythos-laneB` or `/Users/alexisvega/mythos` on `cc/*`.

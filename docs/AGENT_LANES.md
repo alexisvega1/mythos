@@ -8,8 +8,8 @@ of that isolation.
 
 | Agent | Checkout | Branch prefix | Lane |
 |-------|----------|---------------|------|
-| **Claude Code** | `/Users/alexisvega/mythos` (primary) or `mythos-claude` | `cc/*` | A — core train/eval |
-| **Cursor** | `/Users/alexisvega/mythos-cursor` | `cur/*` | B — serve, router, CI, docs |
+| **Claude Code** | `/Users/alexisvega/mythos-laneB` (Lane B) · `/Users/alexisvega/mythos` (Lane A) | `cc/*` | A + B — train/eval + serve/router |
+| **Cursor** | `/Users/alexisvega/mythos-cursor` | `cur/*` | Tooling — CI, scripts, dashboards |
 | **Codex** | `/Users/alexisvega/mythos-codex` | `cdx/*` | C — posttrain, agent evals |
 
 Bootstrap (from any checkout):
@@ -58,18 +58,26 @@ checkpoint-conditioned eval; no-fake-wins gate; real tiny training run + `sample
 
 **Status:** PR #2 open (P0 implemented; merge then continue P1 here).
 
-### Lane B — Cursor · *product surface: serve, deploy-safety, UX, CI* · `cur/*`
+### Lane B — Claude Code · *serve + router* · `cc/*` · `mythos-laneB`
+**Checkout:** `/Users/alexisvega/mythos-laneB`
+
+**Owns:** `src/mythos/serve/**`, `src/mythos/router/**`
+
+**Tasks:** real checkpoint-backed `MythosEngine`, OpenAI-compatible API, dual-tier
+defensive router. **Cursor must not touch these paths.**
+
+**Status:** in progress — `cc/serve-real` (`inference.py`, `api.py` rewire).
+
+### Cursor tooling lane · *CI, scripts, dashboards* · `cur/*`
 **Checkout:** `/Users/alexisvega/mythos-cursor` **only**
 
-**Owns:** `src/mythos/serve/**`, `src/mythos/router/**`, `src/mythos/cli.py`,
-`src/mythos/lab.py`, `eval/dashboards/**`, `scripts/**`, `.github/workflows/**`,
-README/docs polish (not `PLAN.md` / `SECURITY.md` / `program.md`)
+**Owns:** `.github/workflows/**`, `scripts/**`, `eval/dashboards/**`, optional
+`lab.py` / `cli.py` polish, README (not `PLAN.md` / `SECURITY.md` / `program.md`)
 
-**Tasks:** load real checkpoint in `serve`; OpenAI-compatible streaming API; dual-tier
-router as defensive safety-classifier demo; dashboard from `results.tsv`; CI matrix
-(unit + integration + no-fake-wins gate); polished quickstart.
+**Tasks:** CI matrix with no-fake-wins gate; worktree/cloud bootstrap scripts;
+dashboard reading real `results.tsv` runs.
 
-**Status:** worktree created; start after PR #2 merges (consume checkpoint contract).
+**Status:** worktree ready; do not overlap Claude's `serve/` or `router/` work.
 
 ### Lane C — Codex · *isolated capability modules* · `cdx/*`
 **Checkout:** `/Users/alexisvega/mythos-codex`
@@ -112,19 +120,19 @@ Lane A P0 (checkpoint + RawScores)  ──unblocks──▶  Lane B (serve real 
 
 - [x] PR #1 — honest reset (merged)
 - [ ] **A** — PR #2 P0 honest lab (merge, then P1 pretrain) *(Claude · `mythos`)*
-- [ ] **B** — serve + router + CI *(Cursor · `mythos-cursor` · `cur/*`)*
+- [ ] **B** — serve + router *(Claude · `mythos-laneB` · `cc/serve-real`)*
+- [ ] **Cursor** — CI + dashboards + scripts *( `mythos-cursor` · `cur/*`)*
 - [ ] **C** — posttrain + swe/secsec eval *(Codex · `mythos-codex` · `cdx/*`)*
 
 ---
 
-## Copy-paste kickoff — Cursor (Lane B)
+## Copy-paste kickoff — Cursor (tooling lane)
 
 ```text
-You are Lane B on /Users/alexisvega/mythos-cursor ONLY. Read docs/AGENT_LANES.md,
-PLAN.md, SECURITY.md. Branch cur/<topic> from latest main. Edit ONLY Lane B files
-(serve/, router/, cli.py, lab.py, scripts/, .github/, docs polish). Do NOT touch
-data/, train.py, eval harness/composite, or agents/. Consume checkpoint + RawScores
-contracts; never redefine. Keep pytest green. Never fake a metric.
+You are on /Users/alexisvega/mythos-cursor ONLY. Branch cur/<topic> from latest main.
+Edit CI (.github/workflows/), scripts/, eval/dashboards/, optional lab/cli polish.
+Do NOT touch src/mythos/serve/, src/mythos/router/ (Claude Code · mythos-laneB),
+data/, train.py, eval harness, or agents/. Keep pytest green. Never fake a metric.
 ```
 
 ## Copy-paste kickoff — Claude Code (Lane A)
