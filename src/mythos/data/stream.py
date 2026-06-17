@@ -91,12 +91,19 @@ class RealTextStream:
         self._cursor = 0
 
     def __iter__(self) -> Iterator[tuple[torch.Tensor, torch.Tensor]]:
-        while True:
-            if self._cursor + self.block_size + 1 >= len(self.tokens):
+        need = self.block_size + 1
+        toks = self.tokens
+        # If a split is shorter than one block, cycle it so we form a full block
+        # instead of spinning forever (a short val split would otherwise hang).
+        if 0 < len(toks) < need:
+            toks = toks * (need // len(toks) + 1)
+        while toks:
+            if self._cursor + need > len(toks):
                 self._cursor = 0
-            chunk = self.tokens[self._cursor : self._cursor + self.block_size + 1]
+            chunk = toks[self._cursor : self._cursor + need]
             self._cursor += self.block_size
-            if len(chunk) < self.block_size + 1:
+            if len(chunk) < need:
+                self._cursor = 0
                 continue
             x = torch.tensor(chunk[:-1], dtype=torch.long)
             y = torch.tensor(chunk[1:], dtype=torch.long)
