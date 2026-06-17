@@ -1,0 +1,16 @@
+---
+description: Cursor Lane B polish — streaming, CI, dashboards in mythos-cursor
+alwaysApply: true
+---
+
+# Cursor — mythos-cursor worktree · `cur/*`
+
+**Checkout:** `/Users/alexisvega/mythos-cursor` only.
+
+**Own:** serve extensions (streaming, top-k/top-p), `eval/dashboards/**`, `scripts/**`,
+`.github/workflows/**`, worktree bootstrap.
+
+**Do not touch:** Lane A (`data/`, `train.py`, eval core), Lane C (`posttrain.py`, `agents/`),
+or Claude's router logic unless coordinating via PR.
+
+Never fake metrics. Keep `test_no_fake_wins` green.

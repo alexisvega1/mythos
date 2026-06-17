@@ -10,6 +10,7 @@ OpenAI-compatible Mythos/Fable dual-tier API.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import time
 import uuid
@@ -17,12 +18,13 @@ from typing import Literal
 
 import uvicorn
 from fastapi import FastAPI, Header
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from mythos.router import route_request
 from mythos.serve.inference import MythosEngine, load_engine
 
-app = FastAPI(title="Project Mythos API", version="0.2.0")
+app = FastAPI(title="Project Mythos API", version="0.3.0")
 
 _ENGINE: MythosEngine | None = None
 _ATTEMPTED = False
@@ -53,6 +55,9 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage]
     max_tokens: int = 128
     temperature: float = 0.8
+    top_k: int | None = None
+    top_p: float | None = None
+    stream: bool = False
 
 
 class Usage(BaseModel):
@@ -74,7 +79,6 @@ class ChatResponse(BaseModel):
     model: str
     choices: list[ChatChoice]
     usage: Usage
-    # Mythos extensions (OpenAI clients ignore unknown fields):
     routed: bool = False
     route_reason: str = ""
     available: bool = True
@@ -106,36 +110,130 @@ UNAVAILABLE = (
 )
 
 
+def _resolve_reply(
+    req: ChatRequest,
+    decision,
+) -> tuple[str, str, int, int, bool]:
+    """Return (reply, model_used, prompt_tokens, completion_tokens, available)."""
+    if decision.use_fallback:
+        return (
+            REFUSAL.format(reason=decision.reason),
+            decision.model_tier,
+            0,
+            0,
+            True,
+        )
+    engine = get_engine()
+    if engine is None:
+        return UNAVAILABLE, "mythos-unavailable", 0, 0, False
+    prompt = _prompt_from_messages(req.messages)
+    reply, prompt_tokens, completion_tokens = engine.generate(
+        prompt,
+        max_tokens=req.max_tokens,
+        temperature=req.temperature,
+        top_k=req.top_k,
+        top_p=req.top_p,
+    )
+    return reply, engine.config.name, prompt_tokens, completion_tokens, True
+
+
+def _sse_chunks(
+    req_id: str,
+    model: str,
+    text: str,
+    prompt_tokens: int,
+    completion_tokens: int,
+):
+    chunk = {
+        "id": req_id,
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [{"index": 0, "delta": {"content": text}, "finish_reason": None}],
+    }
+    yield f"data: {json.dumps(chunk)}\n\n"
+    final = {
+        "id": req_id,
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
+        },
+    }
+    yield f"data: {json.dumps(final)}\n\n"
+    yield "data: [DONE]\n\n"
+
+
+def _sse_stream_generate(req_id: str, req: ChatRequest, engine: MythosEngine):
+    prompt = _prompt_from_messages(req.messages)
+    prompt_tokens = 0
+    completion_tokens = 0
+    for piece, prompt_tokens, completion_tokens in engine.generate_stream(
+        prompt,
+        max_tokens=req.max_tokens,
+        temperature=req.temperature,
+        top_k=req.top_k,
+        top_p=req.top_p,
+    ):
+        chunk = {
+            "id": req_id,
+            "object": "chat.completion.chunk",
+            "created": int(time.time()),
+            "model": engine.config.name,
+            "choices": [{"index": 0, "delta": {"content": piece}, "finish_reason": None}],
+        }
+        yield f"data: {json.dumps(chunk)}\n\n"
+    final = {
+        "id": req_id,
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": engine.config.name,
+        "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
+        },
+    }
+    yield f"data: {json.dumps(final)}\n\n"
+    yield "data: [DONE]\n\n"
+
+
 @app.post("/v1/chat/completions")
 def chat_completions(
     req: ChatRequest,
     x_mythos_access: str | None = Header(default=None),
-) -> ChatResponse:
+):
     user_text = " ".join(m.content for m in req.messages if m.role == "user")
     tier = _access_tier(x_mythos_access)
     decision = route_request(user_text, access_tier=tier)
+    req_id = f"chatcmpl-{uuid.uuid4().hex[:12]}"
 
-    available = True
-    if decision.use_fallback:
-        reply = REFUSAL.format(reason=decision.reason)
-        model_used = decision.model_tier
-        prompt_tokens = completion_tokens = 0
-    else:
+    if req.stream:
+        if decision.use_fallback:
+            reply, model_used, pt, ct, _ = _resolve_reply(req, decision)
+            return StreamingResponse(
+                _sse_chunks(req_id, model_used, reply, pt, ct),
+                media_type="text/event-stream",
+            )
         engine = get_engine()
         if engine is None:
-            reply = UNAVAILABLE
-            model_used = "mythos-unavailable"
-            available = False
-            prompt_tokens = completion_tokens = 0
-        else:
-            prompt = _prompt_from_messages(req.messages)
-            reply, prompt_tokens, completion_tokens = engine.generate(
-                prompt, max_tokens=req.max_tokens, temperature=req.temperature
+            return StreamingResponse(
+                _sse_chunks(req_id, "mythos-unavailable", UNAVAILABLE, 0, 0),
+                media_type="text/event-stream",
             )
-            model_used = engine.config.name
+        return StreamingResponse(
+            _sse_stream_generate(req_id, req, engine),
+            media_type="text/event-stream",
+        )
 
+    reply, model_used, prompt_tokens, completion_tokens, available = _resolve_reply(req, decision)
     return ChatResponse(
-        id=f"chatcmpl-{uuid.uuid4().hex[:12]}",
+        id=req_id,
         created=int(time.time()),
         model=model_used,
         choices=[ChatChoice(message=ChatMessage(role="assistant", content=reply))],

@@ -94,3 +94,37 @@ def test_real_generation_with_checkpoint(tmp_path):
     assert body["model"] == "serve-real"
     assert body["usage"]["completion_tokens"] > 0
     assert "No checkpoint" not in body["choices"][0]["message"]["content"]
+
+
+def test_streaming_generation_with_checkpoint(tmp_path):
+    config = MythosConfig.from_yaml("configs/test.yaml")
+    config.name = "serve-stream"
+    ckpt_dir = tmp_path / "checkpoints" / config.name
+    metrics = train_run(config, steps=25, checkpoint_dir=ckpt_dir, device="cpu")
+    api.set_engine(MythosEngine(metrics["checkpoint"], device="cpu"))
+
+    client = TestClient(app)
+    with client.stream(
+        "POST",
+        "/v1/chat/completions",
+        json={
+            "messages": [{"role": "user", "content": "the king"}],
+            "max_tokens": 8,
+            "stream": True,
+        },
+    ) as r:
+        assert r.status_code == 200
+        body = "".join(r.iter_lines())
+    assert "chat.completion.chunk" in body
+    assert "[DONE]" in body
+
+
+def test_top_k_sampling(tmp_path):
+    config = MythosConfig.from_yaml("configs/test.yaml")
+    config.name = "serve-topk"
+    ckpt_dir = tmp_path / "checkpoints" / config.name
+    metrics = train_run(config, steps=20, checkpoint_dir=ckpt_dir, device="cpu")
+    engine = MythosEngine(metrics["checkpoint"], device="cpu")
+    text, _, ct = engine.generate("hello", max_tokens=4, temperature=0.8, top_k=10)
+    assert ct == 4
+    assert isinstance(text, str)

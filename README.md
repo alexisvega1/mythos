@@ -21,8 +21,11 @@ frontier-lab patterns; **not** a frontier model and makes no such claim.
 ```bash
 pip install -e ".[all]"
 
-# Smoke train (CPU/single GPU)
-mythos-train --config configs/nano.yaml --steps 100
+# Mythos end-to-end demo — train, serve, live dashboard
+bash scripts/demo.sh                    # fast (test config, ~2 min CPU)
+bash scripts/demo.sh configs/nano.yaml 200 8765   # larger Shakespeare run
+
+# Or step-by-step:
 
 # Proxy eval
 mythos-eval --mode proxy --limit 5
