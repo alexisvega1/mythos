@@ -1,8 +1,15 @@
 # Multi-Agent Implementation Plan — Claude Code · Cursor · Codex
 
-Three coding agents work this repo in parallel. To avoid the near-miss we already had
-(Cursor merged Claude's PR mid-push), **each agent owns a disjoint set of files and
-integrates only through documented contracts.**
+Three coding agents work this repo in parallel. Use **separate git worktrees**
+(`bash scripts/setup-worktrees.sh all`) so commits never collide mid-push.
+
+## Worktrees
+
+| Agent | Checkout | Branch prefix |
+|-------|----------|---------------|
+| Claude Code (A+B core serve) | `mythos-laneB` | `cc/*` |
+| Cursor (B polish + tooling) | `mythos-cursor` | `cur/*` |
+| Codex (C) | `mythos-codex` | `cdx/*` |
 
 ## Golden rules (every agent)
 
@@ -28,14 +35,11 @@ checkpoint-conditioned eval; `None=unavailable` composite with renormalization;
 no-fake-wins regression gate; a real tiny training run with committed `samples.txt`.
 **Status:** in progress — branch `feat/real-training`, corpus fetched.
 
-### Lane B — Cursor · *product surface: serve, deploy-safety, UX, CI, docs* · branch `cur/*`
-**Owns:** `src/mythos/serve/**`, `src/mythos/router/**`, `src/mythos/cli.py`,
-`src/mythos/lab.py`, `eval/dashboards/**`, `scripts/**`, `.github/workflows/**`, README/docs polish.
-**Tasks:** load the **real** checkpoint in `serve` (consume the checkpoint contract);
-OpenAI-compatible streaming endpoint; dual-tier router as a documented **defensive**
-safety-classifier demo (real prompt classifier → refusal/fallback, grants no capability);
-results dashboard that reads only real runs from `results.tsv`; CI matrix (unit +
-integration + the no-fake-wins gate); polished quickstart.
+**Status:** PR #4 merged (core serve). Cursor polish: streaming, top-k/p, dashboard, CI.
+
+### Lane B polish — Cursor · `cur/*` · `mythos-cursor`
+**Owns:** serve extensions (streaming/sampling), `eval/dashboards/**`, `scripts/**`,
+`.github/workflows/**`, worktree bootstrap.
 
 ### Lane C — Codex · *isolated capability modules* · branch `cdx/*`
 **Owns:** `src/mythos/posttrain.py`, `agents/swe/**`, `agents/secsec/**` (new);
@@ -81,10 +85,9 @@ integrate the moment A merges.
 
 ## Status board
 
-- [x] PR #2 — P0 honest lab (merged)
-- [ ] **A** — P1 real pretrain *(Claude, in progress)*
-- [x] **B** — serve real checkpoint + defensive router *(PR #4)*
-- [ ] **C** — posttrain + mini-swe-agent eval + defensive secsec eval *(Codex)*
+- [x] PR #4 — core serve + router *(Claude, merged)*
+- [ ] **B polish** — streaming, dashboard, CI honesty gate *(Cursor, PR pending)*
+- [ ] **C** — posttrain + SWE eval *(Claude — Codex not active yet)*
 
 ---
 
