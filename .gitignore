@@ -20,5 +20,7 @@ wandb/
 data/cache/
 results.tsv.bak
 eval/results/*.json
+eval/dashboards/demo_meta.json
+eval/dashboards/index.html
 lab_memory.json
 .env

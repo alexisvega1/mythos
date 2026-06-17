@@ -10,7 +10,7 @@ def test_render_empty_results(tmp_path):
     out = tmp_path / "index.html"
     render_dashboard(results, out)
     assert out.exists()
-    assert "No runs yet" in out.read_text()
+    assert "No autoresearch runs yet" in out.read_text()
 
 
 def test_render_tsv_rows(tmp_path):
@@ -23,5 +23,5 @@ def test_render_tsv_rows(tmp_path):
     render_dashboard(results, out)
     html = out.read_text()
     assert "2.500000" in html
-    assert "demo" in html
+    assert "Mythos Live Demo" in html
     assert len(load_results_tsv(results)) == 1
