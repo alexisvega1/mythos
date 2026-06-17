@@ -59,6 +59,21 @@ def test_clean_query_unavailable_without_checkpoint():
     assert body["usage"]["completion_tokens"] == 0
 
 
+def test_health_with_checkpoint(tmp_path):
+    config = MythosConfig.from_yaml("configs/test.yaml")
+    config.name = "serve-health"
+    ckpt_dir = tmp_path / "checkpoints" / config.name
+    metrics = train_run(config, steps=20, checkpoint_dir=ckpt_dir, device="cpu")
+    api.set_engine(MythosEngine(metrics["checkpoint"], device="cpu"))
+
+    client = TestClient(app)
+    r = client.get("/health")
+    body = r.json()
+    assert r.status_code == 200
+    assert body["checkpoint_loaded"] is True
+    assert body["checkpoint"] == metrics["checkpoint"]
+
+
 def test_real_generation_with_checkpoint(tmp_path):
     """With a real trained checkpoint, the API returns genuine model output."""
     config = MythosConfig.from_yaml("configs/test.yaml")

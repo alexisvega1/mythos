@@ -81,9 +81,9 @@ integrate the moment A merges.
 
 ## Status board
 
-- [x] PR #1 — honest reset (merged)
-- [ ] **A** — real training + honest eval + no-fake-wins gate *(Claude, in progress)*
-- [ ] **B** — serve real checkpoint + defensive router + CI *(Cursor)*
+- [x] PR #2 — P0 honest lab (merged)
+- [ ] **A** — P1 real pretrain *(Claude, in progress)*
+- [x] **B** — serve real checkpoint + defensive router *(PR #4)*
 - [ ] **C** — posttrain + mini-swe-agent eval + defensive secsec eval *(Codex)*
 
 ---
