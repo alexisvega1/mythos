@@ -1,40 +1,36 @@
 from __future__ import annotations
 
+import json
+import math
 from dataclasses import dataclass, field
 from typing import Any
 
 
 @dataclass
 class BenchmarkWeights:
-    swe_bench_verified: float = 0.25
-    humaneval: float = 0.20
-    exploitbench: float = 0.15
+    val_bpb: float = 0.55
     gsm8k: float = 0.15
-    mmlu: float = 0.10
-    frontiercode: float = 0.10
-    val_bpb: float = 0.05
+    sec_comprehension: float = 0.15
+    mmlu_science: float = 0.10
+    swe_bench_verified: float = 0.05
 
 
 @dataclass
 class RawScores:
-    swe_bench_verified_pass_at_1: float = 0.0
-    humaneval_pass_at_1: float = 0.0
-    exploitbench_weighted_flags: float = 0.0
-    gsm8k_acc: float = 0.0
-    mmlu_macro: float = 0.0
-    frontiercode_proxy: float = 0.0
-    val_bpb: float = 1.0
+    val_bpb: float | None = None
+    gsm8k_acc: float | None = None
+    sec_comprehension_acc: float | None = None
+    mmlu_science_acc: float | None = None
+    swe_bench_verified_pass_at_1: float | None = None
+    unavailable: list[str] = field(default_factory=list)
 
 
-# Reference ceilings for normalization (staged targets from plan)
 NORMALIZE_CEILINGS = {
-    "swe_bench_verified_pass_at_1": 0.80,
-    "humaneval_pass_at_1": 0.90,
-    "exploitbench_weighted_flags": 1.0,
+    "val_bpb": 8.0,
     "gsm8k_acc": 0.95,
-    "mmlu_macro": 0.90,
-    "frontiercode_proxy": 0.30,
-    "val_bpb": 1.5,
+    "sec_comprehension_acc": 1.0,
+    "mmlu_science_acc": 0.90,
+    "swe_bench_verified_pass_at_1": 0.80,
 }
 
 
@@ -48,9 +44,19 @@ def normalize(key: str, value: float) -> float:
 
 @dataclass
 class CompositeResult:
-    mythos_score: float
+    mythos_score: float | None
     components: dict[str, float] = field(default_factory=dict)
     raw: RawScores = field(default_factory=RawScores)
+    unavailable: list[str] = field(default_factory=list)
+
+
+METRIC_FIELDS = {
+    "val_bpb": ("val_bpb", "val_bpb"),
+    "gsm8k_acc": ("gsm8k", "gsm8k_acc"),
+    "sec_comprehension_acc": ("sec_comprehension", "sec_comprehension_acc"),
+    "mmlu_science_acc": ("mmlu_science", "mmlu_science_acc"),
+    "swe_bench_verified_pass_at_1": ("swe_bench_verified", "swe_bench_verified_pass_at_1"),
+}
 
 
 def compute_mythos_score(
@@ -58,34 +64,48 @@ def compute_mythos_score(
     weights: BenchmarkWeights | None = None,
 ) -> CompositeResult:
     w = weights or BenchmarkWeights()
-    components = {
-        "swe_bench_verified": normalize("swe_bench_verified_pass_at_1", raw.swe_bench_verified_pass_at_1),
-        "humaneval": normalize("humaneval_pass_at_1", raw.humaneval_pass_at_1),
-        "exploitbench": normalize("exploitbench_weighted_flags", raw.exploitbench_weighted_flags),
-        "gsm8k": normalize("gsm8k_acc", raw.gsm8k_acc),
-        "mmlu": normalize("mmlu_macro", raw.mmlu_macro),
-        "frontiercode": normalize("frontiercode_proxy", raw.frontiercode_proxy),
-        "val_bpb": normalize("val_bpb", raw.val_bpb),
+    weight_map = {
+        "val_bpb": w.val_bpb,
+        "gsm8k_acc": w.gsm8k,
+        "sec_comprehension_acc": w.sec_comprehension,
+        "mmlu_science_acc": w.mmlu_science,
+        "swe_bench_verified_pass_at_1": w.swe_bench_verified,
     }
-    score = (
-        w.swe_bench_verified * components["swe_bench_verified"]
-        + w.humaneval * components["humaneval"]
-        + w.exploitbench * components["exploitbench"]
-        + w.gsm8k * components["gsm8k"]
-        + w.mmlu * components["mmlu"]
-        + w.frontiercode * components["frontiercode"]
-        + w.val_bpb * components["val_bpb"]
-    )
-    return CompositeResult(mythos_score=score, components=components, raw=raw)
+
+    components: dict[str, float] = {}
+    weighted_sum = 0.0
+    weight_total = 0.0
+    unavailable = list(raw.unavailable)
+
+    for field_name, (component_key, weight_key) in METRIC_FIELDS.items():
+        value = getattr(raw, field_name)
+        wt = weight_map[weight_key]
+        if value is None or math.isnan(value):
+            unavailable.append(component_key)
+            continue
+        norm = normalize(field_name, value)
+        components[component_key] = norm
+        weighted_sum += wt * norm
+        weight_total += wt
+
+    if weight_total <= 0:
+        return CompositeResult(mythos_score=None, components=components, raw=raw, unavailable=unavailable)
+
+    score = weighted_sum / weight_total
+    return CompositeResult(mythos_score=score, components=components, raw=raw, unavailable=unavailable)
 
 
 def raw_from_dict(d: dict[str, Any]) -> RawScores:
+    def _opt(key: str) -> float | None:
+        if key not in d or d[key] is None:
+            return None
+        return float(d[key])
+
     return RawScores(
-        swe_bench_verified_pass_at_1=float(d.get("swe_bench_verified_pass_at_1", 0.0)),
-        humaneval_pass_at_1=float(d.get("humaneval_pass_at_1", 0.0)),
-        exploitbench_weighted_flags=float(d.get("exploitbench_weighted_flags", 0.0)),
-        gsm8k_acc=float(d.get("gsm8k_acc", 0.0)),
-        mmlu_macro=float(d.get("mmlu_macro", 0.0)),
-        frontiercode_proxy=float(d.get("frontiercode_proxy", 0.0)),
-        val_bpb=float(d.get("val_bpb", 1.0)),
+        val_bpb=_opt("val_bpb"),
+        gsm8k_acc=_opt("gsm8k_acc"),
+        sec_comprehension_acc=_opt("sec_comprehension_acc"),
+        mmlu_science_acc=_opt("mmlu_science_acc"),
+        swe_bench_verified_pass_at_1=_opt("swe_bench_verified_pass_at_1"),
+        unavailable=list(d.get("unavailable", [])),
     )

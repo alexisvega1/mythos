@@ -1,14 +1,14 @@
 # Multi-Agent Implementation Plan — Claude Code · Cursor · Codex
 
 Three coding agents work this repo in parallel. **Each agent uses its own git
-worktree** so commits never collide mid-push. File lanes are still enforced on top
-of that isolation.
+worktree** so commits never collide mid-push. File lanes are enforced on top of
+that isolation.
 
 ## Worktree isolation (mandatory)
 
 | Agent | Checkout | Branch prefix | Lane |
 |-------|----------|---------------|------|
-| **Claude Code** | `/Users/alexisvega/mythos-laneB` (Lane B) · `/Users/alexisvega/mythos` (Lane A) | `cc/*` | A + B — train/eval + serve/router |
+| **Claude Code** | `/Users/alexisvega/mythos-laneB` (B) · `/Users/alexisvega/mythos` (A) | `cc/*` | A + B — train/eval + serve/router |
 | **Cursor** | `/Users/alexisvega/mythos-cursor` | `cur/*` | Tooling — CI, scripts, dashboards |
 | **Codex** | `/Users/alexisvega/mythos-codex` | `cdx/*` | C — posttrain, agent evals |
 
@@ -29,9 +29,8 @@ git worktree list
 
 ### Collision note (2026-06-17)
 
-PR #2 (`feat/real-training`) landed P0 core work from **Cursor's checkout** while
-Claude Code owned Lane A — same worktree, crossed lanes. **Merge #2 is fine** (the
-code is honest); afterward **Cursor stays in `mythos-cursor` and Lane B only**.
+PR #2 crossed lanes (Cursor P0 in Claude's tree). Merged OK. **Claude Code now owns
+Lane B serve/router in `mythos-laneB`. Cursor must not touch `serve/` or `router/`.**
 
 ---
 
@@ -53,10 +52,7 @@ code is honest); afterward **Cursor stays in `mythos-cursor` and Lane B only**.
 `src/mythos/checkpoint.py`, `src/mythos/eval/harness.py`, `src/mythos/eval/composite.py`,
 `tests/regression/test_no_fake_wins.py`, `data/corpus/**`, `data/fixtures/**`
 
-**Tasks (P0/P1):** real tokenized data loader + held-out split; byte-accurate `val_bpb`;
-checkpoint-conditioned eval; no-fake-wins gate; real tiny training run + `samples.txt`.
-
-**Status:** PR #2 open (P0 implemented; merge then continue P1 here).
+**Status:** PR #2 merged (P0); P1 pretrain continues here.
 
 ### Lane B — Claude Code · *serve + router* · `cc/*` · `mythos-laneB`
 **Checkout:** `/Users/alexisvega/mythos-laneB`
@@ -77,16 +73,11 @@ defensive router. **Cursor must not touch these paths.**
 **Tasks:** CI matrix with no-fake-wins gate; worktree/cloud bootstrap scripts;
 dashboard reading real `results.tsv` runs.
 
-**Status:** worktree ready; do not overlap Claude's `serve/` or `router/` work.
-
 ### Lane C — Codex · *isolated capability modules* · `cdx/*`
 **Checkout:** `/Users/alexisvega/mythos-codex`
 
 **Owns:** `src/mythos/posttrain.py`, `agents/swe/**`, `agents/secsec/**`;
 removes legacy `agents/cyber/**` and `agents/bio/**`.
-
-**Tasks:** SFT from pretrained checkpoint; mini-swe-agent on SWE-bench Lite; defensive
-secsec comprehension eval; fold bio into MMLU science via lm-eval.
 
 ## Shared contracts (Lane A owns, B & C consume)
 
@@ -109,6 +100,9 @@ Plus `checkpoints/<name>/meta.json` and `samples.txt`.
 `mmlu_macro`, `secsec_comprehension`, `swe_bench_lite_pass_at_1`. Unmeasurable →
 `None`; composite renormalizes. Never emit 0 or limit-derived constants.
 
+**Stable surfaces:** the `[project.scripts]` entry points and config field names must not
+break. Add config fields; don't rename/remove.
+
 ## Sequencing
 
 ```
@@ -119,7 +113,7 @@ Lane A P0 (checkpoint + RawScores)  ──unblocks──▶  Lane B (serve real 
 ## Status board
 
 - [x] PR #1 — honest reset (merged)
-- [ ] **A** — PR #2 P0 honest lab (merge, then P1 pretrain) *(Claude · `mythos`)*
+- [x] PR #2 — P0 honest lab (merged)
 - [ ] **B** — serve + router *(Claude · `mythos-laneB` · `cc/serve-real`)*
 - [ ] **Cursor** — CI + dashboards + scripts *( `mythos-cursor` · `cur/*`)*
 - [ ] **C** — posttrain + swe/secsec eval *(Codex · `mythos-codex` · `cdx/*`)*
@@ -135,13 +129,13 @@ Do NOT touch src/mythos/serve/, src/mythos/router/ (Claude Code · mythos-laneB)
 data/, train.py, eval harness, or agents/. Keep pytest green. Never fake a metric.
 ```
 
-## Copy-paste kickoff — Claude Code (Lane A)
+## Copy-paste kickoff — Claude Code (Lane A + B)
 
 ```text
-You are Lane A on /Users/alexisvega/mythos (primary checkout). Branch cc/<topic>.
-Own data/, train, model, checkpoint, eval harness/composite, no-fake-wins tests,
-corpus/fixtures. Merge PR #2 if ready, then P1 real pretrain. Do not edit serve/,
-router/, or posttrain/. Publish contract changes in AGENT_LANES before B/C integrate.
+Lane A: /Users/alexisvega/mythos — data/, train, model, checkpoint, eval core.
+Lane B: /Users/alexisvega/mythos-laneB — serve/, router/ only (cc/serve-real).
+Branch cc/<topic>. Do not edit posttrain/ or agents/. Publish contract changes in
+AGENT_LANES before others integrate. Never fake a metric.
 ```
 
 ## Copy-paste kickoff — Codex (Lane C)

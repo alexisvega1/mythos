@@ -4,14 +4,10 @@ A **small-LLM research lab**: train → eval → mutate → keep/discard, starti
 scale and scaling only what an honest scoreboard proves. Architecturally inspired by
 frontier-lab patterns; **not** a frontier model and makes no such claim.
 
-> ### ⚠️ STATUS: skeleton being made real
-> The current code is a well-structured scaffold whose training and eval are **not
-> yet real** — `data/stream.py` trains on random tokens and the eval harness returns
-> hardcoded constants. **Do not trust any capability number here yet.** See
-> [`PLAN.md`](PLAN.md) for the honest plan to fix this and
-> [`CURSOR_HANDOFF.md`](CURSOR_HANDOFF.md) for the implementation brief.
-> Scope and posture: [`SECURITY.md`](SECURITY.md) (defensive/eval-only — no offensive
-> cyber or bio capability).
+> ### STATUS: P0 honest lab (real data + checkpoint eval)
+> Training uses **real/fixture text** with held-out **val_bpb**; eval loads checkpoints and
+> refuses fake constants (`test_no_fake_wins`). Capability proxies (GSM8K, SWE, etc.) still
+> return `None` until wired — see [`CURSOR_HANDOFF.md`](CURSOR_HANDOFF.md) for P1–P4.
 
 ## Architecture
 

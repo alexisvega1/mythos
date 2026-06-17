@@ -1,0 +1,32 @@
+[
+  {
+    "id": "sec-001",
+    "prompt": "Code: char buf[8]; gets(buf);",
+    "choices": ["buffer overflow", "cross-site scripting", "sql injection", "path traversal"],
+    "answer_idx": 0
+  },
+  {
+    "id": "sec-002",
+    "prompt": "Code: query = \"SELECT * FROM users WHERE id=\" + user_input",
+    "choices": ["sql injection", "buffer overflow", "race condition", "integer overflow"],
+    "answer_idx": 0
+  },
+  {
+    "id": "sec-003",
+    "prompt": "Code: echo $_GET['name'] without escaping in HTML",
+    "choices": ["cross-site scripting", "command injection", "buffer overflow", "use-after-free"],
+    "answer_idx": 0
+  },
+  {
+    "id": "sec-004",
+    "prompt": "Code: open(user_supplied_path).read()",
+    "choices": ["path traversal", "sql injection", "xss", "deadlock"],
+    "answer_idx": 0
+  },
+  {
+    "id": "sec-005",
+    "prompt": "Code: os.system(user_cmd)",
+    "choices": ["command injection", "buffer overflow", "csrf", "memory leak"],
+    "answer_idx": 0
+  }
+]

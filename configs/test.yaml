@@ -1,0 +1,21 @@
+name: mythos-test
+depth: 2
+n_head: 2
+n_embd: 64
+block_size: 16
+vocab_size: 50257
+batch_size: 2
+grad_accum: 1
+learning_rate: 3.0e-4
+weight_decay: 0.1
+warmup_steps: 5
+max_steps: 500
+train_budget_seconds: 60
+optimizer: nor_muon
+data:
+  source: fixture
+  fixture_path: data/fixtures/tiny_corpus.txt
+  val_holdout_pct: 20
+  seed: 0
+eval:
+  val_batches: 3

@@ -71,7 +71,8 @@ class CausalSelfAttention(nn.Module):
             q = apply_rope(q, cos, sin)
             k = apply_rope(k, cos, sin)
         att = (q @ k.transpose(-2, -1)) / math.sqrt(self.head_dim)
-        att = att.masked_fill(self.mask[:, :, :t, :t] == 0, float("-inf"))
+        mask = torch.tril(torch.ones(t, t, device=x.device, dtype=torch.bool)).view(1, 1, t, t)
+        att = att.masked_fill(~mask, float("-inf"))
         att = F.softmax(att, dim=-1)
         y = att @ v
         y = y.transpose(1, 2).contiguous().view(b, t, c)
