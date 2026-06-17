@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from mythos.autoresearch import load_best_score, append_result
+from mythos.autoresearch import load_best_bpb, append_result
 
 
 def test_results_tsv_roundtrip(tmp_path):
@@ -17,4 +17,4 @@ def test_results_tsv_roundtrip(tmp_path):
             "notes": "{}",
         },
     )
-    assert load_best_score(path) == 0.15
+    assert load_best_bpb(path) == 1.0
