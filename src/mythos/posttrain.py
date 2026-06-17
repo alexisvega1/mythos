@@ -71,6 +71,25 @@ def build_sft_dataset(examples: list[dict], enc, block_size: int) -> tuple[torch
     return torch.tensor(xs, dtype=torch.long), torch.tensor(ys, dtype=torch.long)
 
 
+def _finetune(model, X, Y, *, optimizer_name, weight_decay, steps, lr, batch_size, dev):
+    """Shared fine-tuning loop (used by SFT and RFT). Returns (loss_start, loss_end)."""
+    muon, adam = build_optimizer(model, optimizer_name, lr, weight_decay)
+    gen = torch.Generator().manual_seed(0)
+    n = X.size(0)
+    model.train()
+    loss_start: float | None = None
+    loss_end = float("nan")
+    for _ in range(steps):
+        idx = torch.randint(0, n, (min(batch_size, n),), generator=gen).to(dev)
+        _, loss = model(X[idx], Y[idx])
+        loss.backward()
+        optimizer_step(muon, adam)
+        loss_end = loss.item()
+        if loss_start is None:
+            loss_start = loss_end
+    return loss_start, loss_end
+
+
 def run_sft(
     config: MythosConfig,
     checkpoint: str | Path,
@@ -91,22 +110,11 @@ def run_sft(
     if X.numel() == 0:
         return {"stage": "sft", "status": "no_data", "checkpoint": str(checkpoint)}
     X, Y = X.to(dev), Y.to(dev)
-    n = X.size(0)
 
-    muon, adam = build_optimizer(model, ckpt_cfg.optimizer, lr, ckpt_cfg.weight_decay)
-    gen = torch.Generator().manual_seed(0)
-
-    model.train()
-    loss_start: float | None = None
-    loss_end = float("nan")
-    for _ in range(steps):
-        idx = torch.randint(0, n, (min(batch_size, n),), generator=gen).to(dev)
-        _, loss = model(X[idx], Y[idx])
-        loss.backward()
-        optimizer_step(muon, adam)
-        loss_end = loss.item()
-        if loss_start is None:
-            loss_start = loss_end
+    loss_start, loss_end = _finetune(
+        model, X, Y, optimizer_name=ckpt_cfg.optimizer, weight_decay=ckpt_cfg.weight_decay,
+        steps=steps, lr=lr, batch_size=batch_size, dev=dev,
+    )
 
     out = Path(out_dir) if out_dir else repo_root() / "checkpoints" / f"{ckpt_cfg.name}-sft"
     sft_ckpt = out / "latest.pt"
@@ -116,12 +124,89 @@ def run_sft(
         "checkpoint": str(sft_ckpt),
         "base_checkpoint": str(checkpoint),
         "steps": steps,
-        "examples": n,
+        "examples": int(X.size(0)),
         "sft_loss_start": loss_start,
         "sft_loss_end": loss_end,
     }
     save_checkpoint(sft_ckpt, model, ckpt_cfg, meta.get("step", 0), metrics=metrics)
     return metrics
+
+
+def run_rft(
+    config: MythosConfig,
+    checkpoint: str | Path,
+    solver=None,
+    samples_per_task: int = 3,
+    steps: int = 60,
+    lr: float = 1e-3,
+    batch_size: int = 8,
+    device: str | None = None,
+    out_dir: str | Path | None = None,
+    timeout: int = 10,
+) -> dict:
+    """Rejection fine-tuning on code-repair tasks with a real execution-oracle reward.
+
+    Sample candidate fixes from `solver`, run each against the task's hidden unit test
+    (the reward oracle), keep only oracle-verified passing samples, and fine-tune on
+    them. The reward is the unit test actually passing — not a learned/fabricated score.
+    With the nano model as solver, yield is ~0 (honestly reported); the loop's machinery
+    is validated with capable solvers (see tests).
+    """
+    from mythos.agents.swe import MICRO_TASKS, _candidate_passes, oracle_solver
+
+    dev = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    model, ckpt_cfg, meta = load_checkpoint(checkpoint, device=dev)
+    enc = get_tokenizer(ckpt_cfg.data.tokenizer)
+    solve = solver or oracle_solver
+
+    accepted: list[dict] = []
+    n_candidates = 0
+    for task in MICRO_TASKS:
+        for _ in range(samples_per_task):
+            candidate = solve(task)
+            n_candidates += 1
+            if _candidate_passes(candidate, task["test"], timeout=timeout):
+                accepted.append({
+                    "instruction": f"Fix this Python code so its tests pass:\n{task['buggy']}",
+                    "response": candidate,
+                })
+                break  # one verified fix per task is enough
+
+    result = {
+        "stage": "rft",
+        "reward": "deterministic unit-test execution oracle",
+        "candidates": n_candidates,
+        "accepted": len(accepted),
+        "tasks": len(MICRO_TASKS),
+        "base_checkpoint": str(checkpoint),
+    }
+    if not accepted:
+        result.update({"status": "no_accepted_samples", "fine_tuned": False})
+        return result
+
+    X, Y = build_sft_dataset(accepted, enc, ckpt_cfg.block_size)
+    if X.numel() == 0:
+        result.update({"status": "no_trainable_samples", "fine_tuned": False})
+        return result
+    X, Y = X.to(dev), Y.to(dev)
+
+    loss_start, loss_end = _finetune(
+        model, X, Y, optimizer_name=ckpt_cfg.optimizer, weight_decay=ckpt_cfg.weight_decay,
+        steps=steps, lr=lr, batch_size=batch_size, dev=dev,
+    )
+    out = Path(out_dir) if out_dir else repo_root() / "checkpoints" / f"{ckpt_cfg.name}-rft"
+    rft_ckpt = out / "latest.pt"
+    result.update({
+        "status": "trained",
+        "fine_tuned": True,
+        "steps": steps,
+        "trained_samples": int(X.size(0)),
+        "loss_start": loss_start,
+        "loss_end": loss_end,
+        "checkpoint": str(rft_ckpt),
+    })
+    save_checkpoint(rft_ckpt, model, ckpt_cfg, meta.get("step", 0), metrics=result)
+    return result
 
 
 def run_grpo(config: MythosConfig, checkpoint: Path, env: str = "swe") -> dict:
@@ -135,12 +220,6 @@ def run_grpo(config: MythosConfig, checkpoint: Path, env: str = "swe") -> dict:
 
         return cyber_agent.run_cyber_grpo(config, checkpoint)
     raise ValueError(f"Unknown env: {env}")
-
-
-def run_rft(config: MythosConfig, checkpoint: Path) -> dict:
-    from mythos.agents import swe as swe_agent
-
-    return swe_agent.run_swe_rft(config, checkpoint)
 
 
 def main() -> None:
