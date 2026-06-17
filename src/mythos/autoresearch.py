@@ -1,7 +1,5 @@
 """
-AutoMythos self-recursive research loop.
-
-Fixed-time train → proxy eval → MYTHOS_SCORE → git keep/revert.
+AutoMythos self-recursive research loop — optimizes real held-out val_bpb.
 """
 
 from __future__ import annotations
@@ -11,7 +9,6 @@ import json
 import subprocess
 import sys
 import time
-from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -29,9 +26,11 @@ RESULTS_HEADER = (
 def append_result(path: Path, row: dict) -> None:
     if not path.exists():
         path.write_text(RESULTS_HEADER)
+    score = row["mythos_score"]
+    score_str = "" if score is None else f"{score:.6f}"
     line = (
         f"{row['timestamp']}\t{row['experiment']}\t{row['val_bpb']:.6f}\t"
-        f"{row['mythos_score']:.6f}\t{row['kept']}\t{row.get('commit', '')}\t{row.get('notes', '')}\n"
+        f"{score_str}\t{row['kept']}\t{row.get('commit', '')}\t{row.get('notes', '')}\n"
     )
     with path.open("a") as f:
         f.write(line)
@@ -55,15 +54,15 @@ def git_reset() -> None:
     subprocess.run(["git", "clean", "-fd"], check=False, capture_output=True)
 
 
-def load_best_score(results_path: Path) -> float:
+def load_best_bpb(results_path: Path) -> float:
     if not results_path.exists():
-        return float("-inf")
-    best = float("-inf")
+        return float("inf")
+    best = float("inf")
     for line in results_path.read_text().splitlines()[1:]:
         parts = line.split("\t")
-        if len(parts) >= 4:
+        if len(parts) >= 3:
             try:
-                best = max(best, float(parts[3]))
+                best = min(best, float(parts[2]))
             except ValueError:
                 continue
     return best
@@ -80,16 +79,14 @@ def run_experiment(
     budget_seconds = budget_minutes * 60
 
     train_metrics = train_run(config, budget_seconds=budget_seconds)
-    raw = run_full_eval(limit=eval_limit, mode="proxy")
+    checkpoint = train_metrics["checkpoint"]
+    raw = run_full_eval(model_path=checkpoint, config=config, limit=eval_limit, mode="proxy")
     raw.val_bpb = train_metrics["val_bpb"]
     composite = compute_mythos_score(raw)
 
-    best = load_best_score(results_path)
-    val_bpb_ok = train_metrics["val_bpb"] <= config.val_bpb_gate * max(
-        0.5, best if best > 0 else train_metrics["val_bpb"]
-    )
-    improved = composite.mythos_score > best
-    kept = improved and val_bpb_ok
+    best_bpb = load_best_bpb(results_path)
+    improved = train_metrics["val_bpb"] < best_bpb
+    kept = improved and composite.mythos_score is not None
 
     row = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -97,11 +94,17 @@ def run_experiment(
         "val_bpb": train_metrics["val_bpb"],
         "mythos_score": composite.mythos_score,
         "kept": kept,
-        "notes": json.dumps({"train": train_metrics, "components": composite.components}),
+        "notes": json.dumps(
+            {
+                "train": train_metrics,
+                "components": composite.components,
+                "unavailable": composite.unavailable,
+            }
+        ),
     }
 
     if kept:
-        commit = git_commit(f"autoresearch: exp {experiment_id} score={composite.mythos_score:.4f}")
+        commit = git_commit(f"autoresearch: exp {experiment_id} val_bpb={train_metrics['val_bpb']:.4f}")
         row["commit"] = commit or ""
     else:
         git_reset()

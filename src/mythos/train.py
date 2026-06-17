@@ -1,7 +1,5 @@
 """
 Primary training entry point — the ONLY file AutoMythos mutates for pretrain experiments.
-
-Fixed-time budget runs; reports val_bpb and checkpoint path.
 """
 
 from __future__ import annotations
@@ -13,8 +11,9 @@ from pathlib import Path
 
 import torch
 
+from mythos.checkpoint import latest_checkpoint_for, save_checkpoint, write_metrics
 from mythos.config import MythosConfig
-from mythos.data.stream import bits_per_byte, get_dataloader
+from mythos.data.stream import bits_per_byte, byte_weighted_bpb, get_batch_iterator, get_tokenizer
 from mythos.model import GPT
 from mythos.optim import build_optimizer, lr_schedule, optimizer_step
 
@@ -27,10 +26,14 @@ def train_run(
     checkpoint_dir: Path | None = None,
 ) -> dict:
     dev = device or ("cuda" if torch.cuda.is_available() else "cpu")
+
+    if config.data.source != "synthetic":
+        enc = get_tokenizer(config.data.tokenizer)
+        config.sync_vocab_from_tokenizer(enc.n_vocab)
+
     model = GPT.from_config(config).to(dev)
     muon, adam = build_optimizer(model, config.optimizer, config.learning_rate, config.weight_decay)
-    loader = get_dataloader(config)
-    data_iter = loader()
+    train_batches = get_batch_iterator(config, split="train")
 
     max_steps = steps or config.max_steps
     budget = budget_seconds or config.train_budget_seconds
@@ -38,12 +41,12 @@ def train_run(
 
     running_loss = 0.0
     step = 0
-    val_bpb = float("inf")
+    train_bpb = float("inf")
 
     model.train()
     while step < max_steps and (time.time() - start) < budget:
         for _ in range(config.grad_accum):
-            x, y = next(data_iter)
+            x, y = next(train_batches)
             x, y = x.to(dev), y.to(dev)
             _, loss = model(x, y)
             (loss / config.grad_accum).backward()
@@ -58,23 +61,32 @@ def train_run(
 
         if step % 10 == 0:
             avg_loss = running_loss / 10
-            val_bpb = bits_per_byte(avg_loss, config.vocab_size)
+            train_bpb = bits_per_byte(avg_loss)
             running_loss = 0.0
 
-    elapsed = time.time() - start
+    val_batches = get_batch_iterator(config, split="val", batch_size=min(config.batch_size, 4))
+    val_bpb = byte_weighted_bpb(
+        model,
+        val_batches,
+        config.data.tokenizer,
+        dev,
+        max_batches=config.eval.val_batches,
+    )
+
     out_dir = checkpoint_dir or Path("checkpoints") / config.name
-    out_dir.mkdir(parents=True, exist_ok=True)
     ckpt_path = out_dir / "latest.pt"
-    torch.save({"model": model.state_dict(), "config": config.__dict__, "step": step}, ckpt_path)
+    save_checkpoint(ckpt_path, model, config, step)
 
     metrics = {
         "steps": step,
+        "train_bpb_approx": train_bpb,
         "val_bpb": val_bpb,
-        "elapsed_seconds": elapsed,
+        "elapsed_seconds": time.time() - start,
         "params": model.count_parameters(),
         "checkpoint": str(ckpt_path),
+        "data_source": config.data.source,
     }
-    (out_dir / "metrics.json").write_text(json.dumps(metrics, indent=2))
+    write_metrics(config, metrics)
     return metrics
 
 

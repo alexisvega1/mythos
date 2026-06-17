@@ -2,65 +2,43 @@
 
 ## Mission
 
-Optimize **MYTHOS_SCORE** — a composite of *really measured* capability (real
-held-out language-modeling efficiency, code, math, knowledge, defensive
-secure-coding) — via autonomous edits to `src/mythos/train.py` only.
+Optimize **real held-out val_bpb** on a trained checkpoint. Downstream metrics
+(gsm8k, defensive sec comprehension) count only when actually measured — never
+hardcoded.
 
 ## NEVER STOP
 
-Run experiments until a human interrupts. Each experiment:
-
-1. Read this file + last 20 rows of `results.tsv` + `mythos-lab query` memory
-2. Propose 1–2 focused edits to `src/mythos/train.py`
-3. `git commit` the edit
-4. Run `mythos-autoresearch --max-experiments 1` OR train + eval manually
-5. If MYTHOS_SCORE improved AND val_bpb did not regress >1% → keep
-6. Else → `git reset --hard`
-7. Log to `results.tsv` and `mythos-lab record`
+1. Read this file + last 20 rows of `results.tsv`
+2. Edit **only** `src/mythos/train.py`
+3. Fixed-budget train on **real/fixture text** (never default synthetic for experiments)
+4. Evaluate checkpoint with `mythos-eval --model checkpoints/.../latest.pt`
+5. Keep if **val_bpb improves** on held-out split; else `git reset --hard`
 
 ## Allowed mutations
 
-- Optimizer choice (muon, nor_muon, aurora)
-- Architecture toggles (RoPE, QK-Norm, ReLU², untied embeddings)
-- Hyperparameters (LR, batch, warmup, weight decay)
-- Data mix ratios in config (via train.py reading config)
-- Training schedule and grad accumulation
+- Optimizer, architecture toggles, LR, batch, schedule
+- Data config only via existing config fields (not bypassing held-out split)
 
 ## Forbidden
 
-- **Reporting any metric not conditioned on the trained checkpoint** (a score that
-  doesn't change when the model changes is a bug, not a result)
-- **Counting training on synthetic/random tokens as a real result** — real runs use
-  real text on a held-out split
-- **Offensive cyber or bio capability** — defensive comprehension/eval only (see `SECURITY.md`)
-- Removing eval oracles or reward functions
-- Benchmark contamination (SWE-bench repo IDs in training data)
-- Disabling safety router or serve safeguards
-- Editing `program.md`, eval harnesses, or safety classifiers to inflate scores
+- Synthetic data as default for autoresearch runs
+- Hardcoded eval constants or limit-derived scores
+- Offensive cyber/bio capability code
+- Removing `test_no_fake_wins.py`
 
-## Promotion rules
-
-- Proxy improvement must replicate 3 times before full `--depth` run
-- Full eval every 50 kept experiments
-- Scale nano → medium → frontier only when proxy score plateaus (Chinchilla gate)
-
-## Benchmark weights
-
-Weights apply only to metrics that are **really measured on the checkpoint**. A
-metric with no real implementation is `unavailable` and excluded (renormalize the
-rest) — never scored as a constant.
+## Benchmark weights (available metrics only)
 
 | Component | Weight |
 |---|---|
-| Held-out val bits/byte (real text) | 0.30 |
-| HumanEval (lm-eval on trained model) | 0.20 |
-| GSM8K (lm-eval on trained model) | 0.15 |
-| MMLU (incl. science) | 0.15 |
-| Defensive secure-coding comprehension | 0.10 |
-| SWE-bench Lite (mini-swe-agent, real) | 0.10 |
+| Held-out val bpb | 0.55 |
+| GSM8K (lm-eval on checkpoint) | 0.15 |
+| Defensive sec comprehension | 0.15 |
+| MMLU science | 0.10 |
+| SWE-bench (when wired) | 0.05 |
 
-## Safety
+Unavailable metrics are excluded and weights renormalized.
 
-Defensive and evaluation-only (see `SECURITY.md`). No offensive cyber (exploit/PoC/
-ACE) or bio-uplift. The dual-tier router is a responsible-deployment demo, not a
-capability gate.
+## Promotion
+
+- Proxy improvement must replicate 3× before full-depth promotion
+- Full eval every 50 kept experiments

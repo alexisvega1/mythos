@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import math
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,13 @@ class DataMixConfig:
 
 @dataclass
 class DataConfig:
+    source: str = "real"  # real | synthetic | fixture
+    dataset: str = "roneneldan/TinyStories"
+    dataset_split: str = "train"
+    tokenizer: str = "gpt2"
+    fixture_path: str = "data/fixtures/tiny_corpus.txt"
+    val_holdout_pct: int = 10
+    seed: int = 42
     pretrain_tokens_b: float = 0.5
     mix: DataMixConfig = field(default_factory=DataMixConfig)
 
@@ -26,6 +34,7 @@ class DataConfig:
 class EvalConfig:
     proxy_every: int = 50
     full_every: int = 500
+    val_batches: int = 20
 
 
 @dataclass
@@ -49,7 +58,7 @@ class MythosConfig:
     n_head: int = 6
     n_embd: int = 768
     block_size: int = 1024
-    vocab_size: int = 50304
+    vocab_size: int = 50257
     batch_size: int = 32
     grad_accum: int = 4
     learning_rate: float = 3e-4
@@ -89,7 +98,7 @@ class MythosConfig:
             n_head=raw.get("n_head", 6),
             n_embd=raw.get("n_embd", 768),
             block_size=raw.get("block_size", 1024),
-            vocab_size=raw.get("vocab_size", 50304),
+            vocab_size=raw.get("vocab_size", 50257),
             batch_size=raw.get("batch_size", 32),
             grad_accum=raw.get("grad_accum", 4),
             learning_rate=raw.get("learning_rate", 3e-4),
@@ -106,10 +115,19 @@ class MythosConfig:
             sliding_window=raw.get("sliding_window", 4096),
             val_bpb_gate=raw.get("val_bpb_gate", 1.01),
             data=DataConfig(
+                source=data_raw.get("source", "real"),
+                dataset=data_raw.get("dataset", "roneneldan/TinyStories"),
+                dataset_split=data_raw.get("dataset_split", "train"),
+                tokenizer=data_raw.get("tokenizer", "gpt2"),
+                fixture_path=data_raw.get("fixture_path", "data/fixtures/tiny_corpus.txt"),
+                val_holdout_pct=data_raw.get("val_holdout_pct", 10),
+                seed=data_raw.get("seed", 42),
                 pretrain_tokens_b=data_raw.get("pretrain_tokens_b", 0.5),
                 mix=DataMixConfig(**{k: mix_raw.get(k, 0.0) for k in DataMixConfig.__dataclass_fields__}),
             ),
-            eval=EvalConfig(**{k: eval_raw.get(k, getattr(EvalConfig(), k)) for k in EvalConfig.__dataclass_fields__}),
+            eval=EvalConfig(
+                **{k: eval_raw.get(k, getattr(EvalConfig(), k)) for k in EvalConfig.__dataclass_fields__}
+            ),
             posttrain=PostTrainConfig(
                 **{k: post_raw.get(k, getattr(PostTrainConfig(), k)) for k in PostTrainConfig.__dataclass_fields__}
             ),
@@ -118,6 +136,12 @@ class MythosConfig:
             ),
         )
 
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
     @property
     def n_layer(self) -> int:
         return self.depth
+
+    def sync_vocab_from_tokenizer(self, vocab_size: int) -> None:
+        self.vocab_size = vocab_size

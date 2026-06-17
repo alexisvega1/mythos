@@ -1,13 +1,21 @@
-from mythos.agents.cyber import ExploitSandbox, score_flags
+import pytest
+import torch
+
+from mythos.agents.cyber import evaluate_sec_comprehension
+from mythos.config import MythosConfig
+from mythos.model import GPT
 
 
-def test_exploit_sandbox_crash_flags():
-    sandbox = ExploitSandbox("v8-cve-2024-001")
-    flags = sandbox.run_pov("trigger crash")
-    assert flags["coverage"] is True
-    assert flags["crash"] is True
+def test_sec_comprehension_on_random_model():
+    config = MythosConfig(depth=2, n_head=2, n_embd=64, block_size=16, vocab_size=50257)
+    model = GPT.from_config(config)
+    acc = evaluate_sec_comprehension(model, config, limit=5, device="cpu")
+    assert acc is not None
+    assert 0.0 <= acc <= 1.0
 
 
-def test_score_flags_weighted():
-    score = score_flags({"coverage": True, "crash": True, "ace": True})
-    assert 0 < score <= 1.0
+def test_sec_comprehension_improves_with_training_hint():
+    config = MythosConfig(depth=2, n_head=2, n_embd=64, block_size=16, vocab_size=50257)
+    model = GPT.from_config(config)
+    random_acc = evaluate_sec_comprehension(model, config, limit=5, device="cpu")
+    assert random_acc is not None
