@@ -1,0 +1,40 @@
+{"instruction": "Say hello.", "response": "Hello! How can I help you?"}
+{"instruction": "What is 2 plus 2?", "response": "2 plus 2 is 4."}
+{"instruction": "What is 5 plus 3?", "response": "5 plus 3 is 8."}
+{"instruction": "What is 10 minus 4?", "response": "10 minus 4 is 6."}
+{"instruction": "Reverse the word cat.", "response": "The reverse of cat is tac."}
+{"instruction": "Reverse the word dog.", "response": "The reverse of dog is god."}
+{"instruction": "What is the capital of France?", "response": "The capital of France is Paris."}
+{"instruction": "What is the capital of Japan?", "response": "The capital of Japan is Tokyo."}
+{"instruction": "What is the capital of Italy?", "response": "The capital of Italy is Rome."}
+{"instruction": "Give an antonym of hot.", "response": "An antonym of hot is cold."}
+{"instruction": "Give an antonym of fast.", "response": "An antonym of fast is slow."}
+{"instruction": "Give an antonym of up.", "response": "An antonym of up is down."}
+{"instruction": "Translate hello to a greeting.", "response": "A common greeting is hi."}
+{"instruction": "Name a primary color.", "response": "Red is a primary color."}
+{"instruction": "Name a day of the week.", "response": "Monday is a day of the week."}
+{"instruction": "Count to three.", "response": "One, two, three."}
+{"instruction": "Spell the word sun.", "response": "The word sun is spelled s-u-n."}
+{"instruction": "What sound does a dog make?", "response": "A dog says woof."}
+{"instruction": "What sound does a cat make?", "response": "A cat says meow."}
+{"instruction": "Is the sky blue?", "response": "Yes, the sky is usually blue."}
+{"instruction": "Is fire cold?", "response": "No, fire is hot."}
+{"instruction": "Complete: roses are red, violets are", "response": "Roses are red, violets are blue."}
+{"instruction": "Give the plural of book.", "response": "The plural of book is books."}
+{"instruction": "Give the plural of box.", "response": "The plural of box is boxes."}
+{"instruction": "What comes after Tuesday?", "response": "Wednesday comes after Tuesday."}
+{"instruction": "What is the opposite of yes?", "response": "The opposite of yes is no."}
+{"instruction": "Add 1 and 1.", "response": "1 and 1 make 2."}
+{"instruction": "Name an animal that flies.", "response": "A bird can fly."}
+{"instruction": "Name a fruit.", "response": "An apple is a fruit."}
+{"instruction": "What color is grass?", "response": "Grass is green."}
+{"instruction": "Greet the user politely.", "response": "Good day to you!"}
+{"instruction": "Say thank you.", "response": "Thank you very much."}
+{"instruction": "What is the first letter of apple?", "response": "The first letter of apple is a."}
+{"instruction": "What is the last letter of dog?", "response": "The last letter of dog is g."}
+{"instruction": "Is 7 greater than 3?", "response": "Yes, 7 is greater than 3."}
+{"instruction": "Is 2 greater than 9?", "response": "No, 2 is less than 9."}
+{"instruction": "Name a season.", "response": "Summer is a season."}
+{"instruction": "What is water made of?", "response": "Water is made of hydrogen and oxygen."}
+{"instruction": "Give a synonym of happy.", "response": "A synonym of happy is glad."}
+{"instruction": "Give a synonym of big.", "response": "A synonym of big is large."}
