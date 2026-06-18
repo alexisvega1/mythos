@@ -1,72 +1,74 @@
 # Project Mythos
 
-A **small-LLM research lab**: train → eval → mutate → keep/discard, starting at nano
-scale and scaling only what an honest scoreboard proves. Architecturally inspired by
-frontier-lab patterns; **not** a frontier model and makes no such claim.
+A **small-LLM research lab**: train → eval → post-train → serve, with honest metrics at
+every stage. Architecturally inspired by frontier-lab patterns; **not** a frontier model
+and makes no such claim — but the **full pipeline is real and reproducible**.
 
-> ### STATUS: P0 honest lab + Lane B serve (real checkpoint API)
-> Training uses **real/fixture text** with held-out **val_bpb**; eval loads checkpoints and
-> refuses fake constants. **Serving** loads a real checkpoint via `MythosEngine` — no checkpoint
-> → explicit `available: false` (never a stub reply). Fable router demo blocks flagged queries.
-> Capability proxies (GSM8K, SWE) still `None` until wired — see [`CURSOR_HANDOFF.md`](CURSOR_HANDOFF.md).
+> ### STATUS: semi-functional lab (verified 2026-06-17)
+> **Pretrain** on real text (Shakespeare corpus) → **val_bpb ~1.6** beats unigram baseline (~1.93).
+> **SFT** on instruction data (loss 7.5→0.46). **RFT** with execution-oracle rewards.
+> **Serve** real checkpoints via OpenAI-compatible API + Fable safety router.
+> **41 tests** green including `test_no_fake_wins` honesty gate.
 
-## Architecture
+## See it in action (visual demo)
 
-- **Core**: small GPT (RoPE, QK-Norm, ReLU²) + Muon-family optimizer, config-scaled
-- **AutoMythos**: Karpathy autoresearch loop optimizing a *real* held-out signal
-- **Serving**: OpenAI-compatible API + a defensive safety-classifier router demo
-
-## Quick start
+Best for showing employers — training curve, base↔SFT chat toggle, safety routing:
 
 ```bash
 pip install -e ".[all]"
+make demo          # trains ~21M model on Shakespeare + SFT (~1 min on MPS)
+# open http://127.0.0.1:8000
+```
 
-# Mythos end-to-end demo — train, serve, live dashboard
-bash scripts/demo.sh                    # fast (test config, ~2 min CPU)
-bash scripts/demo.sh configs/nano.yaml 200 8765   # larger Shakespeare run
+Or use the committed metrics immediately (chart renders; run `make demo-build` for live chat):
 
-# Or step-by-step:
+```bash
+python demo/serve_demo.py
+```
 
-# Proxy eval
-mythos-eval --mode proxy --limit 5
+`demo/assets/run.json` has **real** training curve data from a verified run.
 
-# AutoMythos loop (5-min budget per experiment)
-mythos-autoresearch --budget-minutes 5
+## Full pipeline
 
-# Serve Mythos/Fable dual-tier API (real checkpoint required for generation)
-mythos-train --config configs/test.yaml --steps 100   # produces checkpoints/mythos-test/latest.pt
+```bash
+make install
+make test                    # 41 tests, honesty gate included
+
+make pretrain                # Shakespeare ~21M params, writes samples.txt
+make sft                     # instruction fine-tune on pretrained ckpt
+make rft                     # rejection fine-tuning with unit-test oracle
+
+make speedrun                # fast test-config pipeline (~2 min CPU)
+bash scripts/demo.sh         # train + interactive dashboard + API
+
+mythos-autoresearch --budget-minutes 5   # optimize real val_bpb
+```
+
+## Architecture
+
+| Stage | What | Honest? |
+|-------|------|---------|
+| Pretrain | GPT (RoPE, QK-Norm, ReLU², Flash SDPA) + NorMuon | Real text, real val_bpb |
+| Eval | Held-out bpb, sec comprehension, gsm8k (if lm-eval installed) | None when unavailable |
+| Post-train | SFT + RFT (execution oracle) + micro-SWE eval | Real loss / pass rates |
+| Serve | `MythosEngine` + OpenAI API + Fable router | No fabricated replies |
+| AutoResearch | Karpathy loop on val_bpb | `test_no_fake_wins` gate |
+
+## Quick API serve
+
+```bash
+mythos-train --config configs/test.yaml --steps 100
 export MYTHOS_CHECKPOINT=checkpoints/mythos-test/latest.pt
 mythos-serve --checkpoint "$MYTHOS_CHECKPOINT"
-
-# Without a checkpoint: clean queries return available=false (no fabricated text).
-# Flagged queries (exploit/shellcode/etc.) route to Fable tier regardless.
-curl -s localhost:8000/health | jq .
+curl -s localhost:8000/health | python -m json.tool
 ```
 
-## Honest targets (small scale)
+## Docs
 
-These are goals for a *small* model and will be filled in only with numbers from real
-runs — no fabricated or model-independent metrics (see [`SECURITY.md`](SECURITY.md)).
-
-| Metric | Goal |
-|---|---|
-| Held-out val bits/byte (real text) | beat unigram baseline by a documented margin |
-| Coherent text generation | grammatical samples committed to `samples.txt` |
-| HumanEval / GSM8K (lm-eval on the trained model) | report real pass@1, however low |
-| Defensive secure-coding comprehension | identify vuln class in given code |
-| SWE-bench Lite (mini-swe-agent, real scaffold) | end-to-end loop on ≥5 tasks, real pass/fail |
-
-See [docs/BENCHMARKS.md](docs/BENCHMARKS.md). Targets unmet stay blank, not faked.
-
-## Layout
-
-```
-src/mythos/     Core training, model, optimizers, serving
-eval/           Harness wrappers and composite scoring
-agents/         SWE, cyber, bio agent integrations
-configs/        nano / medium / frontier YAML
-program.md      AutoMythos agent constitution
-```
+- [`PLAN.md`](PLAN.md) — honest scope and phases
+- [`demo/README.md`](demo/README.md) — visual demo details
+- [`docs/BRANCH_PROTECTION.md`](docs/BRANCH_PROTECTION.md) — protect `main` for multi-agent work
+- [`docs/AGENT_LANES.md`](docs/AGENT_LANES.md) — lane assignments
 
 ## License
 

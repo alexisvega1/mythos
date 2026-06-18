@@ -77,6 +77,33 @@ def train_run(
     ckpt_path = out_dir / "latest.pt"
     save_checkpoint(ckpt_path, model, config, step)
 
+    samples_path = out_dir / "samples.txt"
+    try:
+        enc = get_tokenizer(config.data.tokenizer)
+        model.eval()
+        prompt = "To be, or not to be"
+        ids = enc.encode(prompt, disallowed_special=()) or [enc.eot_token]
+        x = torch.tensor([ids], dtype=torch.long, device=dev)
+        with torch.no_grad():
+            out_ids = model.generate(
+                x, max_new_tokens=min(64, config.block_size), temperature=0.8,
+            )
+        gen = out_ids[0].tolist()[len(ids):]
+        segments, cur = [], []
+        for tok in gen:
+            if tok == enc.eot_token:
+                if cur:
+                    segments.append(enc.decode(cur))
+                    cur = []
+            else:
+                cur.append(tok)
+        if cur:
+            segments.append(enc.decode(cur))
+        text = "\n".join(s for s in segments if s.strip()).strip()
+        samples_path.write_text(f"# prompt: {prompt}\n{text}\n", encoding="utf-8")
+    except Exception:
+        pass
+
     metrics = {
         "steps": step,
         "train_bpb_approx": train_bpb,
