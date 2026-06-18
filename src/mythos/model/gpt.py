@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from typing import Optional
 
 import torch
@@ -52,13 +51,6 @@ class CausalSelfAttention(nn.Module):
         self.k_norm = RMSNorm(self.head_dim) if config.use_qk_norm else nn.Identity()
         self.block_size = config.block_size
         self.use_rope = config.use_rope
-        self.register_buffer(
-            "mask",
-            torch.tril(torch.ones(config.block_size, config.block_size)).view(
-                1, 1, config.block_size, config.block_size
-            ),
-            persistent=False,
-        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         b, t, c = x.shape
@@ -70,11 +62,10 @@ class CausalSelfAttention(nn.Module):
             cos, sin = build_rope_cache(t, self.head_dim, x.device)
             q = apply_rope(q, cos, sin)
             k = apply_rope(k, cos, sin)
-        att = (q @ k.transpose(-2, -1)) / math.sqrt(self.head_dim)
-        mask = torch.tril(torch.ones(t, t, device=x.device, dtype=torch.bool)).view(1, 1, t, t)
-        att = att.masked_fill(~mask, float("-inf"))
-        att = F.softmax(att, dim=-1)
-        y = att @ v
+        # Flash attention (PyTorch SDPA) — causal mask via is_causal=True
+        y = F.scaled_dot_product_attention(
+            q, k, v, attn_mask=None, dropout_p=0.0, is_causal=True,
+        )
         y = y.transpose(1, 2).contiguous().view(b, t, c)
         return self.proj(y)
 
