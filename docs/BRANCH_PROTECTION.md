@@ -6,8 +6,8 @@ while another agent was still pushing — branch protection + PR-only merges pre
 
 ## Current state
 
-As of setup: **`main` is unprotected by default.** Enable protection in GitHub before
-scaling parallel agent work.
+**`main` is protected** via the `protect-main` ruleset (PR required + CI checks).
+Re-apply after cloning: `bash scripts/enable-branch-protection.sh`
 
 ## Recommended ruleset (GitHub Settings → Rules → Rulesets)
 
