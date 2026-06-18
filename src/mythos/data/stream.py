@@ -42,7 +42,7 @@ def _load_text_documents(config: MythosConfig) -> list[str]:
             text = row.get("text") or row.get("content") or ""
             if text.strip():
                 docs.append(text.strip())
-            if len(docs) >= 512:
+            if len(docs) >= config.data.max_hf_documents:
                 break
         if docs:
             return docs

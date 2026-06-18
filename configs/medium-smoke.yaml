@@ -1,0 +1,30 @@
+# Small config to verify HF streaming data path locally (not full medium scale)
+name: mythos-medium-smoke
+depth: 4
+n_head: 4
+n_embd: 128
+block_size: 64
+vocab_size: 50257
+batch_size: 8
+grad_accum: 1
+learning_rate: 3.0e-4
+weight_decay: 0.1
+warmup_steps: 10
+max_steps: 100
+train_budget_seconds: 300
+optimizer: nor_muon
+use_rope: true
+use_qk_norm: true
+activation: relu2
+untied_embeddings: true
+data:
+  source: real
+  dataset: roneneldan/TinyStories
+  dataset_split: train
+  tokenizer: gpt2
+  fixture_path: data/fixtures/tiny_corpus.txt
+  val_holdout_pct: 10
+  seed: 42
+  max_hf_documents: 256
+eval:
+  val_batches: 5

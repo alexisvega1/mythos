@@ -24,6 +24,12 @@ demo-fast:
 pretrain:
 	python -m mythos.train --config configs/shakespeare.yaml --steps 500
 
+pretrain-hf:
+	python -m mythos.train --config configs/medium-smoke.yaml --steps 100
+
+protect-main:
+	bash scripts/enable-branch-protection.sh
+
 sft:
 	python -m mythos.posttrain --config configs/shakespeare.yaml \
 		--checkpoint checkpoints/mythos-shakespeare/latest.pt --stage sft --steps 150

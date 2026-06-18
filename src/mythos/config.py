@@ -26,6 +26,7 @@ class DataConfig:
     fixture_path: str = "data/fixtures/tiny_corpus.txt"
     val_holdout_pct: int = 10
     seed: int = 42
+    max_hf_documents: int = 512
     pretrain_tokens_b: float = 0.5
     mix: DataMixConfig = field(default_factory=DataMixConfig)
 
@@ -122,6 +123,7 @@ class MythosConfig:
                 fixture_path=data_raw.get("fixture_path", "data/fixtures/tiny_corpus.txt"),
                 val_holdout_pct=data_raw.get("val_holdout_pct", 10),
                 seed=data_raw.get("seed", 42),
+                max_hf_documents=data_raw.get("max_hf_documents", 512),
                 pretrain_tokens_b=data_raw.get("pretrain_tokens_b", 0.5),
                 mix=DataMixConfig(**{k: mix_raw.get(k, 0.0) for k in DataMixConfig.__dataclass_fields__}),
             ),
