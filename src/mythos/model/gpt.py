@@ -158,6 +158,17 @@ class GPT(nn.Module):
     def count_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
+    def count_non_embedding_parameters(self) -> int:
+        """Params excluding token-embedding / untied head — the Chinchilla 'N'.
+
+        At small widths with a 50k vocab the embedding tables dominate the total,
+        so scaling-law fits must use non-embedding params or the law washes out.
+        """
+        embedding = self.wte.weight.numel()
+        if self.lm_head is not None:
+            embedding += self.lm_head.weight.numel()
+        return self.count_parameters() - embedding
+
     @classmethod
     def from_config(cls, config: MythosConfig) -> GPT:
         return cls(config)
