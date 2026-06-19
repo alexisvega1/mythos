@@ -18,14 +18,35 @@ from mythos.model import GPT
 from mythos.optim import build_optimizer, lr_schedule, optimizer_step
 
 
+def _auto_device() -> str:
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
+def _eval_val_bpb(model: GPT, config: MythosConfig, dev: str) -> float:
+    val_batches = get_batch_iterator(config, split="val", batch_size=min(config.batch_size, 4))
+    return byte_weighted_bpb(
+        model, val_batches, config.data.tokenizer, dev, max_batches=config.eval.val_batches,
+    )
+
+
 def train_run(
     config: MythosConfig,
     steps: int | None = None,
     budget_seconds: int | None = None,
     device: str | None = None,
     checkpoint_dir: Path | None = None,
+    seed: int | None = None,
 ) -> dict:
-    dev = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    dev = device or _auto_device()
+
+    # Determinism: seed torch (model init / any sampling) so a run is reproducible
+    # from (seed, config). Data order is already keyed by config.data.seed.
+    seed = config.data.seed if seed is None else seed
+    torch.manual_seed(seed)
 
     if config.data.source != "synthetic":
         enc = get_tokenizer(config.data.tokenizer)
@@ -42,6 +63,8 @@ def train_run(
     running_loss = 0.0
     step = 0
     train_bpb = float("inf")
+    min_val_bpb = float("inf")
+    eval_interval = max(1, max_steps // 8)
 
     model.train()
     while step < max_steps and (time.time() - start) < budget:
@@ -64,14 +87,14 @@ def train_run(
             train_bpb = bits_per_byte(avg_loss)
             running_loss = 0.0
 
-    val_batches = get_batch_iterator(config, split="val", batch_size=min(config.batch_size, 4))
-    val_bpb = byte_weighted_bpb(
-        model,
-        val_batches,
-        config.data.tokenizer,
-        dev,
-        max_batches=config.eval.val_batches,
-    )
+        # Periodic held-out eval so we can report the MINIMUM val_bpb over training
+        # (the survey-recommended quantity for scaling fits), not just the final one.
+        if step % eval_interval == 0:
+            min_val_bpb = min(min_val_bpb, _eval_val_bpb(model, config, dev))
+            model.train()
+
+    val_bpb = _eval_val_bpb(model, config, dev)
+    min_val_bpb = min(min_val_bpb, val_bpb)
 
     out_dir = checkpoint_dir or Path("checkpoints") / config.name
     ckpt_path = out_dir / "latest.pt"
@@ -108,10 +131,13 @@ def train_run(
         "steps": step,
         "train_bpb_approx": train_bpb,
         "val_bpb": val_bpb,
+        "min_val_bpb": min_val_bpb,
         "elapsed_seconds": time.time() - start,
         "params": model.count_parameters(),
+        "non_embedding_params": model.count_non_embedding_parameters(),
         "checkpoint": str(ckpt_path),
         "data_source": config.data.source,
+        "seed": seed,
     }
     write_metrics(config, metrics)
     return metrics
