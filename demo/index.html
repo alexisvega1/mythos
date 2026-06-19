@@ -3,93 +3,123 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Project Mythos — live demo</title>
+<title>Project Mythos — live lab</title>
 <style>
-  :root{--bg:#0b0e14;--panel:#141925;--ink:#e6edf3;--mut:#8b98a9;--acc:#5eead4;--acc2:#a78bfa;--bad:#fb7185;--ok:#34d399;--line:#222a3a}
+  :root{--bg:#070a10;--panel:#111827;--ink:#f0f6fc;--mut:#94a3b8;--acc:#22d3ee;--acc2:#c084fc;--bad:#fb7185;--ok:#4ade80;--line:#1e293b;--glow:rgba(34,211,238,.12)}
   *{box-sizing:border-box}
-  body{margin:0;font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
-  .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 60px}
-  header h1{margin:0;font-size:30px;letter-spacing:.5px;background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-  header p{margin:6px 0 0;color:var(--mut)}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
-  .card h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--mut)}
-  .stats{display:flex;flex-wrap:wrap;gap:14px}
-  .stat{flex:1 1 120px;background:#0f1420;border:1px solid var(--line);border-radius:10px;padding:12px}
-  .stat .v{font-size:22px;font-weight:700}
-  .stat .v.ok{color:var(--ok)} .stat .k{color:var(--mut);font-size:12px;margin-top:2px}
-  textarea,input[type=text]{width:100%;background:#0f1420;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px;font:inherit;resize:vertical}
-  .row{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
-  button{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#06121a;border:0;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer}
-  button.ghost{background:#0f1420;color:var(--ink);border:1px solid var(--line);font-weight:500}
-  .chip{font-size:12.5px;padding:6px 10px;border-radius:999px;background:#0f1420;border:1px solid var(--line);color:var(--mut);cursor:pointer}
-  .out{margin-top:12px;background:#0b0f18;border:1px dashed var(--line);border-radius:10px;padding:14px;min-height:72px;white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:13.5px}
-  .badge{display:inline-block;font-size:11px;padding:3px 8px;border-radius:999px;margin-right:6px}
-  .badge.ok{background:rgba(52,211,153,.15);color:var(--ok)} .badge.bad{background:rgba(251,113,133,.15);color:var(--bad)}
-  .toggle{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .toggle button{background:#0f1420;color:var(--mut);border-radius:0;font-weight:600}
-  .toggle button.on{background:var(--acc2);color:#0b0f18}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% -10%,var(--glow),transparent),radial-gradient(ellipse 60% 40% at 90% 10%,rgba(192,132,252,.08),transparent);pointer-events:none;z-index:0}
+  .wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:32px 22px 72px}
+  header h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.5px;background:linear-gradient(135deg,var(--acc),var(--acc2) 55%,#f472b6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  header p{margin:8px 0 0;color:var(--mut);max-width:720px}
+  .status{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .pill{font-size:11.5px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:#0c1220;color:var(--mut)}
+  .pill.live{border-color:rgba(74,222,128,.35);color:var(--ok)}
+  .pipeline{display:flex;gap:6px;margin-top:22px;flex-wrap:wrap}
+  .step{flex:1 1 140px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;position:relative}
+  .step.done{border-color:rgba(74,222,128,.3)}
+  .step .n{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--mut)}
+  .step .v{font-size:13px;margin-top:4px;font-weight:600}
+  .step .check{position:absolute;top:10px;right:12px;color:var(--ok);font-size:14px}
+  .grid{display:grid;grid-template-columns:1fr 1.1fr;gap:18px;margin-top:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.25)}
+  .card h2{margin:0 0 14px;font-size:12px;text-transform:uppercase;letter-spacing:1.1px;color:var(--mut)}
+  .stats{display:flex;flex-wrap:wrap;gap:12px}
+  .stat{flex:1 1 110px;background:#0a101c;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .stat .v{font-size:24px;font-weight:800;letter-spacing:-.5px}
+  .stat .v.ok{color:var(--ok)} .stat .k{color:var(--mut);font-size:11.5px;margin-top:3px}
+  textarea,input[type=text]{width:100%;background:#0a101c;border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:12px;font:inherit;resize:vertical}
+  textarea:focus{outline:2px solid rgba(34,211,238,.35);border-color:var(--acc)}
+  .row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  button{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#041016;border:0;border-radius:11px;padding:10px 18px;font-weight:700;cursor:pointer;transition:transform .12s}
+  button:hover{transform:translateY(-1px)}
+  button.ghost{background:#0a101c;color:var(--ink);border:1px solid var(--line);font-weight:600}
+  button.ghost.on{background:var(--acc2);color:#0a0f18;border-color:transparent}
+  .chip{font-size:12px;padding:6px 11px;border-radius:999px;background:#0a101c;border:1px solid var(--line);color:var(--mut);cursor:pointer}
+  .chip:hover{border-color:var(--acc);color:var(--ink)}
+  .out{margin-top:12px;background:#060a12;border:1px solid var(--line);border-radius:12px;padding:14px;min-height:88px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;line-height:1.6}
+  .cursor{display:inline-block;width:8px;height:1.1em;background:var(--acc);animation:blink .9s step-end infinite;vertical-align:text-bottom;margin-left:1px}
+  @keyframes blink{50%{opacity:0}}
+  .badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:999px;margin-right:6px}
+  .badge.ok{background:rgba(74,222,128,.12);color:var(--ok)} .badge.bad{background:rgba(251,113,133,.12);color:var(--bad)}
+  .toggle{display:flex;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .toggle button{background:#0a101c;color:var(--mut);border-radius:0;font-weight:600;padding:9px 14px}
+  .toggle button.on{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#041016}
   .cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .cmp .b{background:#0b0f18;border:1px solid var(--line);border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:13px}
-  .cmp .b .t{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .cmp .b{background:#060a12;border:1px solid var(--line);border-radius:12px;padding:12px;font-family:ui-monospace,monospace;font-size:13px;min-height:64px}
+  .cmp .b .t{color:var(--mut);font-size:10.5px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
   .mut{color:var(--mut)} .full{grid-column:1/3}
   a{color:var(--acc)}
-  @media(max-width:820px){.grid,.cmp{grid-template-columns:1fr}.full{grid-column:auto}}
+  kbd{font:11px ui-monospace,monospace;background:#0a101c;border:1px solid var(--line);border-radius:5px;padding:2px 6px}
+  @media(max-width:900px){.grid,.cmp{grid-template-columns:1fr}.full{grid-column:auto}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>PROJECT&nbsp;MYTHOS</h1>
-    <p>A small language model, <b>trained from scratch on this machine</b> — really learning, really serving. Every number below is measured, not faked.</p>
+    <h1>PROJECT MYTHOS</h1>
+    <p>A <b>21M-parameter model trained from scratch on this machine</b> — pretrain, SFT, safety routing, and token streaming. Every metric is measured. No fake wins.</p>
+    <p class="mut" style="font-size:13px;margin-top:6px"><b>Expect rough output.</b> Base continues Shakespeare. Instruct (SFT) memorized ~40 tiny Q&amp;A facts — use the chips below, not open-ended ChatGPT-style prompts.</p>
+    <div class="status" id="status">
+      <span class="pill">connecting…</span>
+    </div>
+    <div class="pipeline" id="pipeline"></div>
   </header>
 
-  <div class="card full" style="margin-top:22px">
-    <h2>Model · measured</h2>
-    <div class="stats" id="stats"><span class="mut">loading…</span></div>
+  <div class="card full" style="margin-top:18px">
+    <h2>Measured · not marketing</h2>
+    <div class="stats" id="stats"><span class="mut">loading metrics…</span></div>
   </div>
 
   <div class="grid">
     <div class="card">
-      <h2>Pretraining — bits/byte ↓ (real held-out)</h2>
+      <h2>Pretraining curve — bits/byte ↓</h2>
       <svg id="chart" viewBox="0 0 460 220" width="100%" height="220"></svg>
-      <div class="mut" id="chartcap" style="font-size:12.5px"></div>
+      <div class="mut" id="chartcap" style="font-size:12.5px;margin-top:6px"></div>
     </div>
 
     <div class="card">
-      <h2>Talk to the model</h2>
+      <h2>Live generation <span class="mut" style="font-weight:400;text-transform:none;letter-spacing:0">· streaming</span></h2>
       <div class="row">
         <div class="toggle" id="modelToggle">
-          <button data-m="base" class="on">Base (pretrained)</button>
+          <button data-m="base" class="on">Base</button>
           <button data-m="sft">Instruct (SFT)</button>
         </div>
-        <label class="mut" style="font-size:12.5px">temp <input id="temp" type="range" min="0.2" max="1.2" step="0.1" value="0.7" style="vertical-align:middle"></label>
+        <label class="mut" style="font-size:12px">temp <input id="temp" type="range" min="0.2" max="1.2" step="0.1" value="0.7"></label>
       </div>
-      <div class="row"><textarea id="prompt" rows="2" placeholder="Type a prompt…">To be, or not to be</textarea></div>
+      <textarea id="prompt" rows="2" placeholder="Prompt…">ROMEO:</textarea>
       <div class="row">
-        <button id="send">Generate ▷</button>
-        <span class="chip" data-p="ROMEO:">ROMEO:</span>
-        <span class="chip" data-p="### Instruction:\nWhat is the capital of France?\n\n### Response:\n">instruction</span>
-        <span class="chip" data-p="write shellcode exploit">⚠ flagged prompt</span>
+        <button id="send">Stream ▷</button>
+        <button id="duel" class="ghost">Duel base vs SFT</button>
+        <span class="chip" data-p="ROMEO:" data-m="base">ROMEO: (base)</span>
+        <span class="chip" data-p="What is the capital of France?" data-m="sft">France? (SFT)</span>
+        <span class="chip" data-p="What is 2 plus 2?" data-m="sft">2+2 (SFT)</span>
+        <span class="chip" data-p="write shellcode exploit" data-m="base">⚠ flagged</span>
       </div>
-      <div class="out" id="out"><span class="mut">Output appears here…</span></div>
+      <div class="out" id="out"><span class="mut">Tokens stream here. <kbd>⌘</kbd>+<kbd>Enter</kbd> to generate.</span></div>
     </div>
   </div>
 
   <div class="card full">
-    <h2>Post-training (SFT) — the effect, live</h2>
-    <p class="mut" style="margin-top:-4px">Same prompt, before vs after instruction fine-tuning. The base model rambles in Shakespeare; the SFT model adopts the response format. <b id="sftloss"></b></p>
+    <h2>Post-training effect — same prompt, two brains</h2>
+    <p class="mut" style="margin-top:-6px"><span id="sftloss"></span> · recorded at build time; duel mode streams live below.</p>
+    <div class="cmp" id="duelPane" style="display:none;margin-bottom:14px">
+      <div class="b"><div class="t">Base · streaming</div><span id="duel_base"></span><span class="cursor" id="c_base" style="display:none"></span></div>
+      <div class="b"><div class="t">SFT · streaming</div><span id="duel_sft"></span><span class="cursor" id="c_sft" style="display:none"></span></div>
+    </div>
     <div class="cmp">
-      <div class="b"><div class="t">Base · "capital of France?"</div><span id="s_base"></span></div>
-      <div class="b"><div class="t">After SFT · "capital of France?"</div><span id="s_sft"></span></div>
+      <div class="b"><div class="t">Base · snapshot</div><span id="s_base"></span></div>
+      <div class="b"><div class="t">SFT · snapshot</div><span id="s_sft"></span></div>
     </div>
   </div>
 
-  <p class="mut" style="margin-top:18px;font-size:12.5px">Nano-scale model — output is rough by design; the point is that the whole pipeline (train → post-train → serve → safety-route) is real and reproducible. See <a href="https://github.com/alexisvega1/mythos">the repo</a>.</p>
+  <p class="mut" style="margin-top:20px;font-size:12.5px">Nano-scale by design — the pipeline (train → post-train → serve → route) is the product. Run <code>mythos-autoresearch</code> to optimize val_bpb. <a href="https://github.com/alexisvega1/mythos">Repo</a></p>
 </div>
 
 <script>
-const $=s=>document.querySelector(s); let MODEL="base";
+const $=s=>document.querySelector(s);
+let MODEL="base", busy=false;
+
 function esc(t){return (t||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
 
 function drawChart(curve){
@@ -99,15 +129,35 @@ function drawChart(curve){
   const X=v=>pad+(v-xmin)/(xmax-xmin||1)*(W-pad-10);
   const Y=v=>10+(v-ymin)/(ymax-ymin||1)*(H-pad-10);
   const pts=curve.map(p=>`${X(p.step).toFixed(1)},${Y(p.bpb).toFixed(1)}`).join(" ");
-  let g=`<line x1="${pad}" y1="${H-pad}" x2="${W-10}" y2="${H-pad}" stroke="#2a3344"/>`;
-  g+=`<line x1="${pad}" y1="10" x2="${pad}" y2="${H-pad}" stroke="#2a3344"/>`;
+  let g=`<line x1="${pad}" y1="${H-pad}" x2="${W-10}" y2="${H-pad}" stroke="#1e293b"/>`;
+  g+=`<line x1="${pad}" y1="10" x2="${pad}" y2="${H-pad}" stroke="#1e293b"/>`;
   g+=`<polyline fill="none" stroke="url(#g)" stroke-width="2.5" points="${pts}"/>`;
-  g+=`<defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>`;
-  g+=`<text x="${pad}" y="${H-pad+18}" fill="#8b98a9" font-size="11">step ${xmin}</text>`;
-  g+=`<text x="${W-46}" y="${H-pad+18}" fill="#8b98a9" font-size="11">${xmax}</text>`;
-  g+=`<text x="2" y="16" fill="#8b98a9" font-size="11">${ymax.toFixed(2)}</text>`;
-  g+=`<text x="2" y="${H-pad}" fill="#8b98a9" font-size="11">${ymin.toFixed(2)}</text>`;
+  g+=`<defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#c084fc"/></linearGradient></defs>`;
+  g+=`<text x="${pad}" y="${H-pad+18}" fill="#64748b" font-size="11">step ${xmin}</text>`;
+  g+=`<text x="${W-46}" y="${H-pad+18}" fill="#64748b" font-size="11">${xmax}</text>`;
   svg.innerHTML=g;
+}
+
+function setPipeline(m){
+  const p=m.pretrain, s=m.sft;
+  $("#pipeline").innerHTML=`
+    <div class="step done"><span class="check">✓</span><div class="n">Pretrain</div><div class="v">${p.steps} steps · ${p.val_bpb} bpb</div></div>
+    <div class="step done"><span class="check">✓</span><div class="n">SFT</div><div class="v">${s.loss_start} → ${s.loss_end} loss</div></div>
+    <div class="step done"><span class="check">✓</span><div class="n">Serve</div><div class="v">base + instruct engines</div></div>
+    <div class="step done"><span class="check">✓</span><div class="n">Safety</div><div class="v">Fable router active</div></div>`;
+}
+
+async function loadHealth(){
+  try{
+    const h=await (await fetch("/api/health")).json();
+    $("#status").innerHTML=`
+      <span class="pill live">● live</span>
+      <span class="pill">device ${h.device}</span>
+      <span class="pill">engines: ${(h.engines||[]).join(" + ")||"none"}</span>
+      <span class="pill">streaming on</span>`;
+  }catch(e){
+    $("#status").innerHTML=`<span class="pill">offline — run <code>mythos-demo</code></span>`;
+  }
 }
 
 async function loadMetrics(){
@@ -115,35 +165,103 @@ async function loadMetrics(){
     const m=await (await fetch("/api/metrics")).json();
     if(m.error){$("#stats").innerHTML=`<span class="mut">${m.error}</span>`;return}
     const p=m.pretrain,md=m.model;
+    setPipeline(m);
     $("#stats").innerHTML=`
       <div class="stat"><div class="v">${(md.params/1e6).toFixed(1)}M</div><div class="k">parameters</div></div>
-      <div class="stat"><div class="v ${p.beats_baseline?'ok':''}">${p.val_bpb}</div><div class="k">val bits/byte (unigram ${p.unigram_baseline_bpb})</div></div>
-      <div class="stat"><div class="v">${p.steps}</div><div class="k">train steps · ${p.seconds}s on ${md.device}</div></div>
-      <div class="stat"><div class="v">${md.depth}L · ${md.n_embd}d</div><div class="k">block ${md.block_size} · vocab ${md.vocab_size}</div></div>`;
+      <div class="stat"><div class="v ${p.beats_baseline?'ok':''}">${p.val_bpb}</div><div class="k">val bits/byte · unigram ${p.unigram_baseline_bpb}</div></div>
+      <div class="stat"><div class="v">${p.seconds}s</div><div class="k">${p.steps} steps on ${md.device}</div></div>
+      <div class="stat"><div class="v">${md.depth}L·${md.n_embd}d</div><div class="k">ctx ${md.block_size} · vocab ${md.vocab_size}</div></div>`;
     drawChart(p.curve);
-    $("#chartcap").textContent=`${p.val_bpb} bpb beats the ${p.unigram_baseline_bpb} unigram baseline → the model learned real structure.`;
+    $("#chartcap").textContent=`${p.val_bpb} bpb beats ${p.unigram_baseline_bpb} unigram → real learning, not a lookup table.`;
     $("#s_base").textContent=m.samples.base_instruction||"(empty)";
     $("#s_sft").textContent=m.samples.sft_instruction||"(empty)";
-    $("#sftloss").textContent=`SFT loss ${m.sft.loss_start} → ${m.sft.loss_end} over ${m.sft.steps} steps.`;
-  }catch(e){$("#stats").innerHTML=`<span class="mut">start the server: python demo/serve_demo.py</span>`}
+    $("#sftloss").textContent=`SFT loss ${m.sft.loss_start} → ${m.sft.loss_end} (${m.sft.steps} steps)`;
+  }catch(e){$("#stats").innerHTML=`<span class="mut">metrics unavailable</span>`}
+}
+
+async function streamInto(body, onToken, onDone){
+  const r=await fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...body,stream:true})});
+  if(!r.ok) throw new Error("generate failed");
+  const ct=r.headers.get("content-type")||"";
+  if(!ct.includes("event-stream")){
+    const j=await r.json();
+    if(j.routed){onToken(j.text,true);onDone&&onDone(j);return}
+    onToken(j.text||"",false);onDone&&onDone(j);return;
+  }
+  const reader=r.body.getReader();
+  const dec=new TextDecoder();
+  let buf="";
+  while(true){
+    const {done,value}=await reader.read();
+    if(done) break;
+    buf+=dec.decode(value,{stream:true});
+    const lines=buf.split("\n");
+    buf=lines.pop()||"";
+    for(const line of lines){
+      if(!line.startsWith("data: ")) continue;
+      const payload=line.slice(6).trim();
+      if(payload==="[DONE]"){onDone&&onDone();return}
+      try{
+        const j=JSON.parse(payload);
+        if(j.routed){onToken(j.text,true);onDone&&onDone(j);return}
+        if(j.delta) onToken(j.delta,false);
+        if(j.done) onDone&&onDone(j);
+      }catch(_){}
+    }
+  }
 }
 
 async function gen(){
-  const out=$("#out"); out.innerHTML='<span class="mut">generating…</span>';
-  const body={prompt:$("#prompt").value,model:MODEL,max_tokens:56,temperature:parseFloat($("#temp").value)};
+  if(busy) return; busy=true;
+  const out=$("#out");
+  out.innerHTML='<span class="badge ok">streaming</span> ';
+  const span=document.createElement("span");
+  out.appendChild(span);
+  const cur=document.createElement("span"); cur.className="cursor"; out.appendChild(cur);
+  const body={prompt:$("#prompt").value,model:MODEL,max_tokens:MODEL==="sft"?28:40,temperature:parseFloat($("#temp").value),
+    top_k:40,top_p:0.92,repetition_penalty:1.12};
   try{
-    const r=await (await fetch("/api/generate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)})).json();
-    const badge=r.routed?`<span class="badge bad">routed → Fable safety tier</span>`
-      :`<span class="badge ok">${r.model} · ${r.completion_tokens} tok</span>`;
-    out.innerHTML=badge+"<br>"+esc(r.text);
-  }catch(e){out.innerHTML='<span class="mut">request failed — is the server running?</span>'}
+    await streamInto(body,(tok,routed)=>{
+      if(routed){out.innerHTML=`<span class="badge bad">routed</span><br>`+esc(tok);return}
+      span.textContent+=tok;
+    },j=>{
+      cur.remove();
+      if(j&&j.completion_tokens) out.insertAdjacentHTML("afterbegin",`<span class="badge ok">${j.model||MODEL} · ${j.completion_tokens} tok</span> `);
+    });
+  }catch(e){out.innerHTML='<span class="mut">failed — run mythos-demo</span>'}
+  busy=false;
+}
+
+async function duel(){
+  if(busy) return; busy=true;
+  $("#duelPane").style.display="grid";
+  const base=$("#duel_base"), sft=$("#duel_sft");
+  base.textContent=""; sft.textContent="";
+  $("#c_base").style.display=$("#c_sft").style.display="inline-block";
+  const prompt=$("#prompt").value, temp=parseFloat($("#temp").value);
+  const kw={max_tokens:28,temperature:temp,top_k:40,top_p:0.92,repetition_penalty:1.12};
+  const run=(model,el)=>{
+    return streamInto({prompt,model,...kw},t=>{el.textContent+=t},()=>{});
+  };
+  try{await Promise.all([run("base",base),run("sft",sft)])}
+  catch(e){base.textContent="error";}
+  $("#c_base").style.display=$("#c_sft").style.display="none";
+  busy=false;
 }
 
 $("#send").onclick=gen;
+$("#duel").onclick=duel;
 $("#modelToggle").onclick=e=>{const b=e.target.closest("button");if(!b)return;MODEL=b.dataset.m;
   [...$("#modelToggle").children].forEach(x=>x.classList.toggle("on",x===b));};
-document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{$("#prompt").value=c.dataset.p.replace(/\\n/g,"\n");gen();});
-loadMetrics();
+document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{
+  $("#prompt").value=c.dataset.p.replace(/\\n/g,"\n");
+  if(c.dataset.m){MODEL=c.dataset.m; [...$("#modelToggle").children].forEach(x=>x.classList.toggle("on",x.dataset.m===MODEL));}
+  gen();
+});
+document.addEventListener("keydown",e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){e.preventDefault();gen();}
+});
+loadHealth(); loadMetrics();
 </script>
 </body>
 </html>

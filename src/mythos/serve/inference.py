@@ -28,6 +28,18 @@ def pick_device(pref: str | None = None) -> str:
     return "cpu"
 
 
+def _apply_repetition_penalty(
+    logits: torch.Tensor,
+    token_ids: list[int],
+    penalty: float | None,
+) -> torch.Tensor:
+    if penalty is None or penalty <= 1.0 or not token_ids:
+        return logits
+    for tid in set(token_ids):
+        logits[0, tid] /= penalty
+    return logits
+
+
 def _apply_top_k_top_p(logits: torch.Tensor, top_k: int | None, top_p: float | None) -> torch.Tensor:
     if top_k is not None and top_k > 0:
         k = min(top_k, logits.size(-1))
@@ -77,6 +89,7 @@ class MythosEngine:
         temperature: float,
         top_k: int | None = None,
         top_p: float | None = None,
+        repetition_penalty: float | None = None,
     ) -> list[int]:
         enc = self.tokenizer
         idx = torch.tensor([prompt_ids], dtype=torch.long, device=self.device)
@@ -86,10 +99,13 @@ class MythosEngine:
             idx_cond = idx[:, -self.model.config.block_size :]
             logits, _ = self.model(idx_cond)
             logits = logits[:, -1, :] / temp
+            logits = _apply_repetition_penalty(logits, gen[-48:], repetition_penalty)
             logits = _apply_top_k_top_p(logits, top_k, top_p)
             probs = F.softmax(logits, dim=-1)
             next_token = int(torch.multinomial(probs, num_samples=1).item())
             gen.append(next_token)
+            if next_token == enc.eot_token:
+                break
             idx = torch.cat((idx, torch.tensor([[next_token]], device=self.device)), dim=1)
         return gen
 
@@ -101,11 +117,14 @@ class MythosEngine:
         temperature: float = 0.8,
         top_k: int | None = None,
         top_p: float | None = None,
+        repetition_penalty: float | None = None,
     ) -> tuple[str, int, int]:
         """Return (completion_text, prompt_tokens, completion_tokens)."""
         enc = self.tokenizer
         ids = enc.encode(prompt, disallowed_special=()) or [enc.eot_token]
-        gen_ids = self._sample_ids(ids, max_tokens, temperature, top_k, top_p)
+        gen_ids = self._sample_ids(
+            ids, max_tokens, temperature, top_k, top_p, repetition_penalty,
+        )
         text = _decode_gen_ids(enc, gen_ids)
         return text, len(ids), len(gen_ids)
 
@@ -117,6 +136,7 @@ class MythosEngine:
         temperature: float = 0.8,
         top_k: int | None = None,
         top_p: float | None = None,
+        repetition_penalty: float | None = None,
     ) -> Iterator[tuple[str, int, int]]:
         """Yield (token_text, prompt_tokens, completion_index) per generated token."""
         enc = self.tokenizer
@@ -124,18 +144,21 @@ class MythosEngine:
         idx = torch.tensor([ids], dtype=torch.long, device=self.device)
         temp = max(temperature, 1e-6)
         prompt_len = len(ids)
+        gen: list[int] = []
         for i in range(max(1, max_tokens)):
             idx_cond = idx[:, -self.model.config.block_size :]
             logits, _ = self.model(idx_cond)
             logits = logits[:, -1, :] / temp
+            logits = _apply_repetition_penalty(logits, gen[-48:], repetition_penalty)
             logits = _apply_top_k_top_p(logits, top_k, top_p)
             probs = F.softmax(logits, dim=-1)
             next_token = int(torch.multinomial(probs, num_samples=1).item())
+            gen.append(next_token)
             idx = torch.cat((idx, torch.tensor([[next_token]], device=self.device)), dim=1)
             if next_token == enc.eot_token:
-                piece = "\n"
-            else:
-                piece = enc.decode([next_token])
+                yield "\n", prompt_len, i + 1
+                break
+            piece = enc.decode([next_token])
             yield piece, prompt_len, i + 1
 
 
