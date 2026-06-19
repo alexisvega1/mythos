@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,8 @@ from mythos.checkpoint import load_checkpoint
 from mythos.config import MythosConfig
 from mythos.data.stream import byte_weighted_bpb, get_batch_iterator
 from mythos.eval.composite import RawScores
+
+logger = logging.getLogger(__name__)
 
 
 def evaluate_held_out_bpb(
@@ -34,22 +37,35 @@ def run_lm_eval_tasks(
     tasks: list[str] | None = None,
     limit: int | None = None,
 ) -> dict[str, float | None]:
-    """Run lm-eval on the Mythos checkpoint when installed; else unavailable."""
+    """Run lm-eval on the Mythos checkpoint when installed and supported; else unavailable.
+
+    Per PLAN.md, a metric we cannot compute is reported as *unavailable* (None) — never a
+    crash and never a fake constant. A task is unavailable if lm-eval is absent OR if it
+    requires a capability the wrapper does not implement (e.g. gsm8k needs ``generate_until``,
+    which is out of scale for a tiny from-scratch model — see OLMES guidance in PLAN.md).
+    """
     tasks = tasks or ["gsm8k"]
     try:
         from mythos.eval.lm_wrapper import MythosLMEval
         from lm_eval import simple_evaluate
     except ImportError:
-        return {f"{tasks[0]}_acc": None}
+        return {f"{t}_acc": None for t in tasks}
 
-    model = MythosLMEval(checkpoint_path)
-    results = simple_evaluate(
-        model=model,
-        tasks=tasks,
-        num_fewshot=0,
-        limit=limit,
-        batch_size=1,
-    )
+    try:
+        model = MythosLMEval(checkpoint_path)
+        results = simple_evaluate(
+            model=model,
+            tasks=tasks,
+            num_fewshot=0,
+            limit=limit,
+            batch_size=1,
+        )
+    except Exception as exc:
+        # Covers NotImplementedError (e.g. gsm8k -> generate_until) and any runtime/download
+        # failure: mark the tasks unavailable rather than crashing the whole eval.
+        logger.warning("lm-eval tasks %s unavailable (%s): %s", tasks, type(exc).__name__, exc)
+        return {f"{t}_acc": None for t in tasks}
+
     out: dict[str, float | None] = {}
     for task in tasks:
         task_res = results.get("results", {}).get(task, {})
