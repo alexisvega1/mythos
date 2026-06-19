@@ -25,6 +25,9 @@ class RMSNorm(nn.Module):
 
 
 def apply_rope(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor) -> torch.Tensor:
+    # Interleaved (GPT-J) convention: rotate adjacent pairs (x[2i], x[2i+1]).
+    # cos/sin MUST be aligned to this layout (see build_rope_cache) or the result
+    # is not a rotation and per-token norm is not preserved.
     x1, x2 = x[..., ::2], x[..., 1::2]
     rotated = torch.stack((-x2, x1), dim=-1).flatten(-2)
     return x * cos + rotated * sin
@@ -34,7 +37,11 @@ def build_rope_cache(seq_len: int, head_dim: int, device: torch.device) -> tuple
     inv_freq = 1.0 / (10000 ** (torch.arange(0, head_dim, 2, device=device).float() / head_dim))
     t = torch.arange(seq_len, device=device).float()
     freqs = torch.outer(t, inv_freq)
-    emb = torch.cat((freqs, freqs), dim=-1)
+    # repeat_interleave -> [f0, f0, f1, f1, ...] aligns each angle with the (2i, 2i+1)
+    # pair that apply_rope rotates. (The previous cat((freqs, freqs)) used the NeoX
+    # half-layout [f0, f1, ..., f0, f1, ...], which mismatched apply_rope and produced
+    # a non-norm-preserving, corrupted positional signal — see tests/unit/test_rope.py.)
+    emb = freqs.repeat_interleave(2, dim=-1)
     return emb.cos()[None, None, :, :], emb.sin()[None, None, :, :]
 
 
