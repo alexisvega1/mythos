@@ -8,12 +8,18 @@ install:
 test:
 	$(PY) -m pytest tests/ -q
 
-# Visual demo — venv-aware, skips train when checkpoints exist
+# Visual demo — venv-aware; rebuild with stronger demo model (configs/demo.yaml)
 demo:
 	bash scripts/run-demo.sh
 
+demo-rebuild:
+	bash scripts/run-demo.sh --rebuild
+
 demo-build:
 	$(PY) demo/build_demo.py
+
+demo-build-quick:
+	$(PY) demo/build_demo.py --quick
 
 demo-serve:
 	$(PY) demo/serve_demo.py

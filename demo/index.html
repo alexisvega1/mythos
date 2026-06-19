@@ -45,7 +45,7 @@
   .toggle{display:flex;border:1px solid var(--line);border-radius:11px;overflow:hidden}
   .toggle button{background:#0a101c;color:var(--mut);border-radius:0;font-weight:600;padding:9px 14px}
   .toggle button.on{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#041016}
-  .cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cmp{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
   .cmp .b{background:#060a12;border:1px solid var(--line);border-radius:12px;padding:12px;font-family:ui-monospace,monospace;font-size:13px;min-height:64px}
   .cmp .b .t{color:var(--mut);font-size:10.5px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
   .mut{color:var(--mut)} .full{grid-column:1/3}
@@ -87,13 +87,14 @@
         </div>
         <label class="mut" style="font-size:12px">temp <input id="temp" type="range" min="0.2" max="1.2" step="0.1" value="0.7"></label>
       </div>
-      <textarea id="prompt" rows="2" placeholder="Prompt…">ROMEO:</textarea>
+      <textarea id="prompt" rows="2" placeholder="Prompt…">To be, or not to be</textarea>
       <div class="row">
         <button id="send">Stream ▷</button>
         <button id="duel" class="ghost">Duel base vs SFT</button>
-        <span class="chip" data-p="ROMEO:" data-m="base">ROMEO: (base)</span>
+        <span class="chip" data-p="To be, or not to be" data-m="base">Hamlet (base)</span>
+        <span class="chip" data-p="ROMEO:&#10;" data-m="base">ROMEO: (base)</span>
         <span class="chip" data-p="What is the capital of France?" data-m="sft">France? (SFT)</span>
-        <span class="chip" data-p="What is 2 plus 2?" data-m="sft">2+2 (SFT)</span>
+        <span class="chip" data-p="Continue in Shakespeare's style: O fair moon," data-m="sft">Moon (SFT)</span>
         <span class="chip" data-p="write shellcode exploit" data-m="base">⚠ flagged</span>
       </div>
       <div class="out" id="out"><span class="mut">Tokens stream here. <kbd>⌘</kbd>+<kbd>Enter</kbd> to generate.</span></div>
@@ -110,6 +111,7 @@
     <div class="cmp">
       <div class="b"><div class="t">Base · snapshot</div><span id="s_base"></span></div>
       <div class="b"><div class="t">SFT · snapshot</div><span id="s_sft"></span></div>
+      <div class="b"><div class="t">SFT · Shakespeare style</div><span id="s_sft_shake"></span></div>
     </div>
   </div>
 
@@ -175,7 +177,8 @@ async function loadMetrics(){
     $("#chartcap").textContent=`${p.val_bpb} bpb beats ${p.unigram_baseline_bpb} unigram → real learning, not a lookup table.`;
     $("#s_base").textContent=m.samples.base_instruction||"(empty)";
     $("#s_sft").textContent=m.samples.sft_instruction||"(empty)";
-    $("#sftloss").textContent=`SFT loss ${m.sft.loss_start} → ${m.sft.loss_end} (${m.sft.steps} steps)`;
+    $("#s_sft_shake").textContent=m.samples.sft_shakespeare||"(empty)";
+    $("#sftloss").textContent=`SFT loss ${m.sft.loss_start} → ${m.sft.loss_end} (${m.sft.steps} steps, ${m.sft.dataset_examples||m.sft.examples} examples).`;
   }catch(e){$("#stats").innerHTML=`<span class="mut">metrics unavailable</span>`}
 }
 

@@ -13,6 +13,9 @@ make demo
 This bootstraps `.venv`, installs core deps (no lm-eval), skips retrain when checkpoints
 exist, picks a free port, and opens the browser.
 
+The demo model uses **`configs/demo.yaml`** (30.5M params, 800 pretrain steps, 88 SFT
+examples including Shakespeare-style instruct data).
+
 ```bash
 mythos-demo --rebuild    # force retrain (~1 min on Apple Silicon)
 make demo-quick          # 80-step CPU-friendly build

@@ -44,11 +44,17 @@ make demo                    # ~instant serve if ckpts exist; ~1 min rebuild wit
 ## High-value next tasks (pick one lane)
 
 ### Cursor `cur/*` — demo & tooling
-1. **Prebuilt ckpt download** — GitHub release or `scripts/fetch-demo-ckpt.sh` so fresh clones get live chat without ~1 min train
+1. **Prebuilt ckpt download** — GitHub release or `scripts/fetch-demo-ckpt.sh` so fresh clones get live chat without ~2 min train
 2. **Dashboard polish** — `eval/dashboards/render.py` link from demo UI; autoresearch ticker from real `results.tsv`
 3. **CI job** — `pytest tests/unit/test_demo_cli.py` + smoke `TestClient` on `serve_demo` (no full train in CI)
 
-### Claude `cc/*` — Lane A/B core (coordinate if touching `serve/inference.py` further)
+### In progress (`cur/demo-model-v2`)
+- **`configs/demo.yaml`** — 6L/256d (~48M params), 800 pretrain steps on Shakespeare
+- **SFT expanded** — 88 instruction examples incl. Shakespeare-style responses (`data/fixtures/sft_instructions.jsonl`)
+- **`demo/build_demo.py`** — uses demo config, 280 SFT steps, MythosEngine sampling for snapshots
+- After rebuild: commit updated `demo/assets/run.json` with real metrics
+
+### Claude `cc/*` — Lane A/B core
 1. **Medium pretrain** — `configs/medium-smoke.yaml` longer run; commit new `samples.txt` + metrics
 2. **Serve API parity** — expose `repetition_penalty` on `/v1/chat/completions` (demo already uses it internally)
 3. **Regression flakes** — `test_no_fake_wins` failed intermittently on CPU in local run; investigate seed/device

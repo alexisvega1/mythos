@@ -8,7 +8,7 @@ and makes no such claim — but the **full pipeline is real and reproducible**.
 > **Pretrain** on real text (Shakespeare corpus) → **val_bpb ~1.6** beats unigram baseline (~1.93).
 > **SFT** on instruction data (loss 7.5→0.46). **RFT** with execution-oracle rewards.
 > **Serve** real checkpoints via OpenAI-compatible API + Fable safety router.
-> **Demo** one-command: `make demo` (streaming, duel mode, safety routing).
+> **Demo model (`configs/demo.yaml`):** 30.5M params, 6L/256d, val_bpb **1.56** beats unigram **1.94**, 88 SFT examples.
 > **43+ tests** green including `test_no_fake_wins` honesty gate.
 > Agent pickup: [`docs/AGENT_PICKUP.md`](docs/AGENT_PICKUP.md).
 
@@ -22,10 +22,11 @@ make demo
 # or: pip install -e . && mythos-demo
 ```
 
-Rebuild from scratch (~1 min on Apple Silicon):
+Rebuild from scratch (~2–3 min on Apple Silicon, 30M params / 800 steps):
 
 ```bash
 mythos-demo --rebuild
+make demo-rebuild
 ```
 
 CPU-friendly quick train:

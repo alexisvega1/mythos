@@ -38,3 +38,51 @@
 {"instruction": "What is water made of?", "response": "Water is made of hydrogen and oxygen."}
 {"instruction": "Give a synonym of happy.", "response": "A synonym of happy is glad."}
 {"instruction": "Give a synonym of big.", "response": "A synonym of big is large."}
+{"instruction": "What is the capital of Spain?", "response": "The capital of Spain is Madrid."}
+{"instruction": "What is the capital of Germany?", "response": "The capital of Germany is Berlin."}
+{"instruction": "What is the capital of Canada?", "response": "The capital of Canada is Ottawa."}
+{"instruction": "What is 3 times 4?", "response": "3 times 4 is 12."}
+{"instruction": "What is 9 divided by 3?", "response": "9 divided by 3 is 3."}
+{"instruction": "What is 15 minus 7?", "response": "15 minus 7 is 8."}
+{"instruction": "How many sides does a triangle have?", "response": "A triangle has three sides."}
+{"instruction": "How many days are in a week?", "response": "There are seven days in a week."}
+{"instruction": "What planet do we live on?", "response": "We live on Earth."}
+{"instruction": "Is ice hot or cold?", "response": "Ice is cold."}
+{"instruction": "Can fish breathe underwater?", "response": "Yes, fish can breathe underwater with gills."}
+{"instruction": "Name a mammal.", "response": "A whale is a mammal."}
+{"instruction": "Name a vegetable.", "response": "A carrot is a vegetable."}
+{"instruction": "What do bees make?", "response": "Bees make honey."}
+{"instruction": "What is H2O commonly called?", "response": "H2O is commonly called water."}
+{"instruction": "Who wrote Romeo and Juliet?", "response": "William Shakespeare wrote Romeo and Juliet."}
+{"instruction": "Name a Shakespeare tragedy.", "response": "Hamlet is a famous Shakespeare tragedy."}
+{"instruction": "Who speaks 'To be, or not to be'?", "response": "Hamlet speaks that line in the play."}
+{"instruction": "What is Romeo and Juliet about?", "response": "It is a tragedy about two young lovers from rival families."}
+{"instruction": "Continue in Shakespeare's style: O fair moon,", "response": "thou art as bright as silver in the midnight sky."}
+{"instruction": "Write one short line about love in old English style.", "response": "My heart doth sing when thou art near to me."}
+{"instruction": "Name a character from Hamlet.", "response": "Ophelia is a character in Hamlet."}
+{"instruction": "What is a soliloquy?", "response": "A soliloquy is a speech a character speaks alone on stage."}
+{"instruction": "Complete: Friends, Romans, countrymen,", "response": "lend me your ears."}
+{"instruction": "In one sentence, who is Juliet?", "response": "Juliet is the young heroine of Romeo and Juliet."}
+{"instruction": "Give a synonym of sad.", "response": "A synonym of sad is sorrowful."}
+{"instruction": "Give a synonym of small.", "response": "A synonym of small is tiny."}
+{"instruction": "What is the plural of child?", "response": "The plural of child is children."}
+{"instruction": "What is the plural of mouse?", "response": "The plural of mouse is mice."}
+{"instruction": "Spell the word moon.", "response": "The word moon is spelled m-o-o-n."}
+{"instruction": "What comes before Thursday?", "response": "Wednesday comes before Thursday."}
+{"instruction": "Is the sun a star?", "response": "Yes, the sun is a star."}
+{"instruction": "Do penguins fly?", "response": "No, penguins cannot fly."}
+{"instruction": "Name an ocean.", "response": "The Pacific is an ocean."}
+{"instruction": "What instrument has keys and strings?", "response": "A piano has keys and strings."}
+{"instruction": "What is the boiling point of water in Celsius?", "response": "Water boils at about 100 degrees Celsius."}
+{"instruction": "How many hours are in a day?", "response": "There are 24 hours in a day."}
+{"instruction": "What color is a banana when ripe?", "response": "A ripe banana is yellow."}
+{"instruction": "Name a sport with a ball.", "response": "Soccer is a sport played with a ball."}
+{"instruction": "What do plants need to grow?", "response": "Plants need sunlight, water, and soil to grow."}
+{"instruction": "Is zero an even number?", "response": "Yes, zero is an even number."}
+{"instruction": "What is the largest mammal?", "response": "The blue whale is the largest mammal."}
+{"instruction": "Translate goodbye to a farewell.", "response": "A farewell word is farewell."}
+{"instruction": "Name a shape with four equal sides.", "response": "A square has four equal sides."}
+{"instruction": "What is the opposite of night?", "response": "The opposite of night is day."}
+{"instruction": "Summarize Romeo and Juliet in one sentence.", "response": "Two lovers from feuding families die tragically in Verona."}
+{"instruction": "Who is the Prince of Denmark in Hamlet?", "response": "Hamlet is the Prince of Denmark."}
+{"instruction": "Write a greeting fit for a Shakespeare play.", "response": "Hail, good my lord, and welcome to this hall."}

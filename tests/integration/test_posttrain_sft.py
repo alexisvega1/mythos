@@ -19,6 +19,13 @@ def test_sft_dataset_masks_prompt():
     assert (Y == -100).any()
 
 
+def test_sft_fixture_expanded():
+    examples = load_sft_examples()
+    assert len(examples) >= 80
+    texts = " ".join(ex["instruction"] for ex in examples).lower()
+    assert "shakespeare" in texts
+
+
 def test_sft_decreases_loss(tmp_path):
     config = MythosConfig.from_yaml("configs/test.yaml")
     config.name = "sft-test"
