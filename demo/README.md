@@ -2,21 +2,41 @@
 
 See the small model **train, post-train, serve, and safety-route** — live, with real numbers.
 
+## One command
+
 ```bash
-pip install -e ".[all]"
-python demo/build_demo.py     # trains + SFTs a ~21M model on the Shakespeare corpus (~1 min on MPS)
-python demo/serve_demo.py     # then open http://127.0.0.1:8000
+make demo
+# equivalent: bash scripts/run-demo.sh
+# equivalent: pip install -e . && mythos-demo
 ```
 
-`build_demo.py` writes `demo/assets/run.json` (training curve, val bits/byte vs unigram
-baseline, base-vs-SFT samples) and saves the base + SFT checkpoints under
-`demo/assets/` (gitignored). `serve_demo.py` loads them and serves:
+This bootstraps `.venv`, installs core deps (no lm-eval), skips retrain when checkpoints
+exist, picks a free port, and opens the browser.
 
-- **Live chat** with a base↔SFT toggle — watch instruction fine-tuning change the model
-  (base rambles Shakespeare; SFT answers `"The capital of France is Paris."`).
-- **Training curve** — real held-out bits/byte over steps; beats the unigram baseline.
-- **Safety router** — a flagged prompt is routed to the Fable tier, not run through the model.
+The demo model uses **`configs/demo.yaml`** (30.5M params, 800 pretrain steps, 88 SFT
+examples including Shakespeare-style instruct data).
 
-It's a nano-scale model, so output is rough by design — the point is that the **entire
-pipeline is real and reproducible** (no fabricated metrics; see `../SECURITY.md`). The
-demo server is standalone and reuses `mythos.serve.inference` + `mythos.router`.
+```bash
+mythos-demo --rebuild    # force retrain (~1 min on Apple Silicon)
+make demo-quick          # 80-step CPU-friendly build
+```
+
+## What you get
+
+- **Token streaming** — watch completions arrive token-by-token
+- **Duel mode** — base vs SFT on the same prompt, side by side
+- **Training curve** — real held-out bits/byte; beats unigram baseline
+- **Safety router** — flagged prompts hit the Fable tier, not the model
+- **Pipeline timeline** — pretrain → SFT → serve → safety, all measured
+
+`build_demo.py` writes `demo/assets/run.json` and checkpoints under `demo/assets/` (gitignored).
+`demo/assets/run.json` is also committed so the chart works before a local build.
+
+## Manual
+
+```bash
+python demo/build_demo.py --skip-if-ready
+python demo/serve_demo.py --device mps
+```
+
+Nano-scale by design — the **pipeline** is the product. See `../SECURITY.md`.

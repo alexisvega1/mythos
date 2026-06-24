@@ -1,131 +1,134 @@
 {
   "model": {
-    "params": 21070144,
-    "depth": 4,
-    "n_embd": 192,
-    "block_size": 96,
+    "params": 30453888,
+    "depth": 6,
+    "n_embd": 256,
+    "block_size": 128,
     "vocab_size": 50257,
-    "device": "mps"
+    "device": "mps",
+    "config": "configs/demo.yaml"
   },
   "pretrain": {
-    "steps": 500,
-    "seconds": 51.1,
+    "steps": 800,
+    "seconds": 115.7,
     "curve": [
       {
-        "step": 20,
-        "bpb": 3.8529
+        "step": 32,
+        "bpb": 3.7879
       },
       {
-        "step": 40,
-        "bpb": 3.4119
+        "step": 64,
+        "bpb": 2.9903
       },
       {
-        "step": 60,
-        "bpb": 2.6918
-      },
-      {
-        "step": 80,
+        "step": 96,
         "bpb": 2.3891
       },
       {
-        "step": 100,
-        "bpb": 2.3063
-      },
-      {
-        "step": 120,
-        "bpb": 2.236
-      },
-      {
-        "step": 140,
-        "bpb": 2.1414
+        "step": 128,
+        "bpb": 2.2947
       },
       {
         "step": 160,
-        "bpb": 2.0583
+        "bpb": 2.1609
       },
       {
-        "step": 180,
-        "bpb": 1.9881
+        "step": 192,
+        "bpb": 2.0225
       },
       {
-        "step": 200,
-        "bpb": 1.9311
+        "step": 224,
+        "bpb": 1.9129
       },
       {
-        "step": 220,
-        "bpb": 1.8783
+        "step": 256,
+        "bpb": 1.843
       },
       {
-        "step": 240,
-        "bpb": 1.8175
-      },
-      {
-        "step": 260,
-        "bpb": 1.785
-      },
-      {
-        "step": 280,
-        "bpb": 1.7412
-      },
-      {
-        "step": 300,
-        "bpb": 1.7363
+        "step": 288,
+        "bpb": 1.771
       },
       {
         "step": 320,
-        "bpb": 1.7091
+        "bpb": 1.7179
       },
       {
-        "step": 340,
-        "bpb": 1.6902
+        "step": 352,
+        "bpb": 1.6671
       },
       {
-        "step": 360,
-        "bpb": 1.6679
+        "step": 384,
+        "bpb": 1.6447
       },
       {
-        "step": 380,
-        "bpb": 1.6461
+        "step": 416,
+        "bpb": 1.6096
       },
       {
-        "step": 400,
-        "bpb": 1.6363
-      },
-      {
-        "step": 420,
-        "bpb": 1.6481
-      },
-      {
-        "step": 440,
-        "bpb": 1.6357
-      },
-      {
-        "step": 460,
-        "bpb": 1.629
+        "step": 448,
+        "bpb": 1.5801
       },
       {
         "step": 480,
-        "bpb": 1.6246
+        "bpb": 1.5504
       },
       {
-        "step": 500,
-        "bpb": 1.6163
+        "step": 512,
+        "bpb": 1.5256
+      },
+      {
+        "step": 544,
+        "bpb": 1.5165
+      },
+      {
+        "step": 576,
+        "bpb": 1.4976
+      },
+      {
+        "step": 608,
+        "bpb": 1.4785
+      },
+      {
+        "step": 640,
+        "bpb": 1.4569
+      },
+      {
+        "step": 672,
+        "bpb": 1.4573
+      },
+      {
+        "step": 704,
+        "bpb": 1.452
+      },
+      {
+        "step": 736,
+        "bpb": 1.4441
+      },
+      {
+        "step": 768,
+        "bpb": 1.436
+      },
+      {
+        "step": 800,
+        "bpb": 1.4281
       }
     ],
-    "val_bpb": 1.6022,
-    "unigram_baseline_bpb": 1.9303,
+    "val_bpb": 1.5576,
+    "unigram_baseline_bpb": 1.9358,
     "beats_baseline": true
   },
   "sft": {
-    "loss_start": 7.911,
-    "loss_end": 0.027,
-    "examples": 40,
-    "steps": 160
+    "loss_start": 8.925,
+    "loss_end": 0.003,
+    "examples": 88,
+    "steps": 280,
+    "dataset_examples": 88
   },
   "samples": {
-    "base_shakespeare": "The doth please the rest, a remember\nI'll love thy gracious hand of hisIR of my lord?\nBut.\nShe do he had a VI:\nIUS:\nNo, my Lord of me, if",
-    "base_instruction": ".\nAnd, the king and the king you be\nDUKE VINCENTIO:\nand his wife",
-    "sft_instruction": "The capital of France is Paris.\nThe capital of France is Paris.\nThe capital of France is Paris."
+    "base_shakespeare": "a word.",
+    "base_instruction": "in our crown'd,",
+    "sft_instruction": "The capital of France is Paris.",
+    "sft_shakespeare": "thou art as bright as silver in the midnight sky."
   },
   "checkpoint": "/Users/alexisvega/mythos/demo/assets/ckpt-sft/latest.pt"
 }

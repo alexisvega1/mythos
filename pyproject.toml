@@ -45,6 +45,7 @@ mythos-eval = "mythos.eval.cli:main"
 mythos-autoresearch = "mythos.autoresearch:main"
 mythos-serve = "mythos.serve.api:main"
 mythos-lab = "mythos.lab:main"
+mythos-demo = "mythos.demo_cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mythos"]

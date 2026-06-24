@@ -1,0 +1,32 @@
+# Demo model — portfolio-scale but stronger than shakespeare.yaml baseline.
+# ~48M params; ~2–3 min pretrain + SFT on Apple Silicon MPS.
+name: mythos-demo
+depth: 6
+n_head: 8
+n_embd: 256
+block_size: 128
+vocab_size: 50257
+batch_size: 16
+grad_accum: 1
+learning_rate: 5.0e-4
+weight_decay: 0.1
+warmup_steps: 60
+max_steps: 800
+train_budget_seconds: 900
+optimizer: nor_muon
+use_rope: true
+use_qk_norm: true
+activation: relu2
+untied_embeddings: true
+val_bpb_gate: 1.01
+data:
+  source: fixture
+  dataset: roneneldan/TinyStories
+  tokenizer: gpt2
+  fixture_path: data/corpus/tinyshakespeare.txt
+  val_holdout_pct: 10
+  seed: 42
+eval:
+  proxy_every: 50
+  full_every: 800
+  val_batches: 20
