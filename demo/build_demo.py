@@ -7,6 +7,7 @@ everything to demo/assets/run.json. All numbers are real and reproducible.
 from __future__ import annotations
 
 import json
+import os
 import time
 from pathlib import Path
 
@@ -70,6 +71,22 @@ def _generate(model, enc, prompt: str, dev: str, n: int = 48, temp: float = 0.7)
 
 
 def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Build Mythos demo assets")
+    parser.add_argument("--quick", action="store_true", help="80 train steps (CPU-friendly)")
+    parser.add_argument("--skip-if-ready", action="store_true", help="Exit 0 if checkpoints exist")
+    args = parser.parse_args()
+
+    if args.skip_if_ready and CKPT.exists() and (ASSETS / "ckpt-sft" / "latest.pt").exists() and (ASSETS / "run.json").exists():
+        print("demo assets ready — skip build")
+        return
+
+    steps = int(os.environ.get("MYTHOS_DEMO_STEPS", "80" if args.quick else str(STEPS)))
+    _run(steps)
+
+
+def _run(steps: int) -> None:
     cfg = _config()
     dev = _device()
     enc = get_tokenizer(cfg.data.tokenizer)
@@ -84,12 +101,12 @@ def main() -> None:
     t0 = time.time()
     running = 0.0
     model.train()
-    for step in range(STEPS):
+    for step in range(steps):
         x, y = next(batches)
         x, y = x.to(dev), y.to(dev)
         _, loss = model(x, y)
         loss.backward()
-        lr = lr_schedule(step, cfg.warmup_steps, STEPS, cfg.learning_rate)
+        lr = lr_schedule(step, cfg.warmup_steps, steps, cfg.learning_rate)
         for opt in (muon, adam):
             for pg in opt.param_groups:
                 pg["lr"] = lr
@@ -106,7 +123,7 @@ def main() -> None:
         cfg.data.tokenizer, dev, max_batches=16,
     )
     uni = unigram_baseline_bpb(cfg.data.tokenizer, RealTextStream(cfg, split="val").tokens[:8000])
-    save_checkpoint(CKPT, model, cfg, STEPS, metrics={"val_bpb": val_bpb})
+    save_checkpoint(CKPT, model, cfg, steps, metrics={"val_bpb": val_bpb})
     base_sample = _generate(model, enc, "ROMEO:", dev)
     base_instruct = _generate(model, enc, SFT_TEMPLATE.format(instruction="What is the capital of France?"), dev, n=24)
 
@@ -118,7 +135,7 @@ def main() -> None:
     run = {
         "model": {"params": model.count_parameters(), "depth": cfg.depth, "n_embd": cfg.n_embd,
                    "block_size": cfg.block_size, "vocab_size": cfg.vocab_size, "device": dev},
-        "pretrain": {"steps": STEPS, "seconds": round(train_secs, 1), "curve": curve,
+        "pretrain": {"steps": steps, "seconds": round(train_secs, 1), "curve": curve,
                       "val_bpb": round(val_bpb, 4), "unigram_baseline_bpb": round(uni, 4),
                       "beats_baseline": val_bpb < uni},
         "sft": {"loss_start": round(sft["sft_loss_start"], 3), "loss_end": round(sft["sft_loss_end"], 3),

@@ -40,7 +40,10 @@ no-fake-wins regression gate; a real tiny training run with committed `samples.t
 
 ### Lane B polish — Cursor · `cur/*` · `mythos-cursor`
 **Owns:** serve extensions (streaming/sampling), `eval/dashboards/**`, `scripts/**`,
-`.github/workflows/**`, worktree bootstrap.
+`.github/workflows/**`, worktree bootstrap, **`demo/**`**, **`mythos-demo` CLI**.
+
+**Status (2026-06-18):** PR `cur/frontier-demo` — one-command demo (`make demo`),
+streaming UI, EOS/repetition sampling fixes. Pickup: [`AGENT_PICKUP.md`](AGENT_PICKUP.md).
 
 ### Lane C — Codex · *isolated capability modules* · branch `cdx/*`
 **Owns:** `src/mythos/posttrain.py`, `agents/swe/**`, `agents/secsec/**` (new);
